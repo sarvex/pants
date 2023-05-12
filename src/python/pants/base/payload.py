@@ -42,8 +42,7 @@ class Payload(object):
     """Retrieves the value in the payload field if the field exists, otherwise returns the default.
     """
     if key in self._fields:
-      payload_field = self._fields[key]
-      if payload_field:
+      if payload_field := self._fields[key]:
         return payload_field.value
     return default
 
@@ -98,14 +97,8 @@ class Payload(object):
           empty_hash = False
           hasher.update(sha1(key).hexdigest())
           hasher.update(fp)
-    if empty_hash:
-      return None
-    else:
-      return hasher.hexdigest()
+    return None if empty_hash else hasher.hexdigest()
 
   def __getattr__(self, attr):
     field = self._fields[attr]
-    if field is not None:
-      return field.value
-    else:
-      return None
+    return field.value if field is not None else None

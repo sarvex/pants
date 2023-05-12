@@ -227,8 +227,7 @@ class _JUnitRunner(object):
 
   def _get_tests_to_run(self):
     for test_spec in self._tests_to_run:
-      for c in self._interpret_test_spec(test_spec):
-        yield c
+      yield from self._interpret_test_spec(test_spec)
 
   def _test_target_candidates(self, targets):
     for target in targets:
@@ -238,8 +237,7 @@ class _JUnitRunner(object):
   def _calculate_tests_from_targets(self, targets):
     targets_to_classes = self._context.products.get_data('classes_by_target')
     for target in self._test_target_candidates(targets):
-      target_products = targets_to_classes.get(target)
-      if target_products:
+      if target_products := targets_to_classes.get(target):
         for _, classes in target_products.rel_paths():
           for cls in classes:
             yield _classfile_to_classname(cls)
@@ -250,7 +248,7 @@ class _JUnitRunner(object):
     if not source_products:
       # It's valid - if questionable - to have a source file with no classes when, for
       # example, the source file has all its code commented out.
-      self._context.log.warn('Source file %s generated no classes' % srcfile)
+      self._context.log.warn(f'Source file {srcfile} generated no classes')
     else:
       for _, classes in source_products.rel_paths():
         for cls in classes:
@@ -259,7 +257,7 @@ class _JUnitRunner(object):
   def _interpret_test_spec(self, test_spec):
     components = test_spec.split('#', 2)
     classname_or_srcfile = components[0]
-    methodname = '#' + components[1] if len(components) == 2 else ''
+    methodname = f'#{components[1]}' if len(components) == 2 else ''
 
     if os.path.exists(classname_or_srcfile):  # It's a source file.
       srcfile = classname_or_srcfile  # Alias for clarity.
@@ -332,21 +330,20 @@ class _Coverage(_JUnitRunner):
   def get_coverage_patterns(self, targets):
     if self._coverage_filters:
       return self._coverage_filters
-    else:
-      classes_under_test = set()
-      classes_by_source = self._context.products.get_data('classes_by_source')
+    classes_under_test = set()
+    classes_by_source = self._context.products.get_data('classes_by_source')
 
-      def add_sources_under_test(tgt):
-        if self.is_coverage_target(tgt):
-          for source in tgt.sources_relative_to_buildroot():
-            source_products = classes_by_source.get(source)
-            if source_products:
-              for _, classes in source_products.rel_paths():
-                classes_under_test.update(_classfile_to_classname(cls) for cls in classes)
+    def add_sources_under_test(tgt):
+      if self.is_coverage_target(tgt):
+        for source in tgt.sources_relative_to_buildroot():
+          source_products = classes_by_source.get(source)
+          if source_products:
+            for _, classes in source_products.rel_paths():
+              classes_under_test.update(_classfile_to_classname(cls) for cls in classes)
 
-      for target in targets:
-        target.walk(add_sources_under_test)
-      return classes_under_test
+    for target in targets:
+      target.walk(add_sources_under_test)
+    return classes_under_test
 
 
 class Emma(_Coverage):
@@ -400,6 +397,7 @@ class Emma(_Coverage):
     def collect_source_base(target):
       if self.is_coverage_target(target):
         source_bases.add(target.target_base)
+
     for target in self._test_target_candidates(targets):
       target.walk(collect_source_base)
     for source_base in source_bases:
@@ -407,14 +405,20 @@ class Emma(_Coverage):
 
     sorting = ['-Dreport.sort', '+name,+class,+method,+block']
     if self._coverage_report_console:
-      args.extend(['-r', 'txt',
-                   '-Dreport.txt.out.file=%s' % self._coverage_console_file] + sorting)
+      args.extend(([
+          '-r',
+          'txt',
+          f'-Dreport.txt.out.file={self._coverage_console_file}',
+      ] + sorting))
     if self._coverage_report_xml:
-      args.extend(['-r', 'xml', '-Dreport.xml.out.file=%s' % self._coverage_xml_file])
+      args.extend(['-r', 'xml', f'-Dreport.xml.out.file={self._coverage_xml_file}'])
     if self._coverage_report_html:
-      args.extend(['-r', 'html',
-                   '-Dreport.html.out.file=%s' % self._coverage_html_file,
-                   '-Dreport.out.encoding=UTF-8'] + sorting)
+      args.extend(([
+          '-r',
+          'html',
+          f'-Dreport.html.out.file={self._coverage_html_file}',
+          '-Dreport.out.encoding=UTF-8',
+      ] + sorting))
 
     main = 'emma'
     result = execute_java(classpath=self._emma_classpath, main=main, args=args,
@@ -457,8 +461,7 @@ class Cobertura(_Coverage):
     classes_by_target = self._context.products.get_data('classes_by_target')
     for target in targets:
       if self.is_coverage_target(target):
-        classes_by_rootdir = classes_by_target.get(target)
-        if classes_by_rootdir:
+        if classes_by_rootdir := classes_by_target.get(target):
           for root, products in classes_by_rootdir.rel_paths():
             self._rootdirs[root].update(products)
     # Cobertura uses regular expressions for filters, and even then there are still problems
@@ -490,8 +493,7 @@ class Cobertura(_Coverage):
         ]
       with temporary_file() as fd:
         fd.write('\n'.join(classes) + '\n')
-        args.append('--listOfFilesToInstrument')
-        args.append(fd.name)
+        args.extend(('--listOfFilesToInstrument', fd.name))
         main = 'net.sourceforge.cobertura.instrument.InstrumentMain'
         result = execute_java(classpath=self._cobertura_classpath + junit_classpath,
                               main=main,
@@ -503,21 +505,25 @@ class Cobertura(_Coverage):
                         " 'failed to instrument'" % (main, result))
 
   def run(self, tests, junit_classpath, cwd=None):
-    self._run_tests(tests,
-                    self._cobertura_classpath + junit_classpath,
-                    JUnitRun._MAIN,
-                    extra_jvm_options=['-Dnet.sourceforge.cobertura.datafile=' + self._coverage_datafile],
-                    cwd=cwd)
+    self._run_tests(
+        tests,
+        self._cobertura_classpath + junit_classpath,
+        JUnitRun._MAIN,
+        extra_jvm_options=[
+            f'-Dnet.sourceforge.cobertura.datafile={self._coverage_datafile}'
+        ],
+        cwd=cwd,
+    )
 
   def _build_sources_by_class(self):
     """Invert classes_by_source."""
 
     classes_by_source = self._context.products.get_data('classes_by_source')
-    source_by_class = dict()
+    source_by_class = {}
     for source_file, source_products in classes_by_source.items():
       for root, products in source_products.rel_paths():
         for product in products:
-          if not '$' in product:
+          if '$' not in product:
             if source_by_class.get(product):
               if source_by_class.get(product) != source_file:
                 self._context.log.warn(
@@ -540,8 +546,7 @@ class Cobertura(_Coverage):
     coverage_source_root_dir = os.path.join(self._coverage_dir, 'src')
     safe_rmtree(coverage_source_root_dir)
     for cls in all_classes:
-      source_file = sources_by_class.get(cls)
-      if source_file:
+      if source_file := sources_by_class.get(cls):
         # the class in @cls
         #    (e.g., 'com/pants/example/hello/welcome/WelcomeEverybody.class')
         # was compiled from the file in @source_file
@@ -564,15 +569,15 @@ class Cobertura(_Coverage):
         except OSError as e:
           # These warnings appear when source files contain multiple classes.
           self._context.log.warn(
-            'Could not symlink %s to %s: %s' %
-            (source_file, fake_source_file, e))
+              f'Could not symlink {source_file} to {fake_source_file}: {e}')
       else:
-        self._context.log.error('class %s does not exist in a source file!' % cls)
+        self._context.log.error(f'class {cls} does not exist in a source file!')
     report_formats = []
     if self._coverage_report_xml:
       report_formats.append('xml')
     if self._coverage_report_html:
       report_formats.append('html')
+    main = 'net.sourceforge.cobertura.reporting.ReportMain'
     for report_format in report_formats:
       report_dir = os.path.join(self._coverage_dir, report_format)
       safe_mkdir(report_dir, clean=True)
@@ -585,12 +590,13 @@ class Cobertura(_Coverage):
         '--format',
         report_format,
         ]
-      main = 'net.sourceforge.cobertura.reporting.ReportMain'
-      result = execute_java(classpath=self._cobertura_classpath,
-                            main=main,
-                            args=args,
-                            workunit_factory=self._context.new_workunit,
-                            workunit_name='cobertura-report-' + report_format)
+      result = execute_java(
+          classpath=self._cobertura_classpath,
+          main=main,
+          args=args,
+          workunit_factory=self._context.new_workunit,
+          workunit_name=f'cobertura-report-{report_format}',
+      )
       if result != 0:
         raise TaskError("java %s ... exited non-zero (%i)"
                         " 'failed to report'" % (main, result))
@@ -623,12 +629,12 @@ class JUnitRun(JvmTask, JvmToolTaskMixin):
     options = self.get_options()
     if options.coverage or options.coverage_html_open:
       coverage_processor = options.coverage_processor
-      if coverage_processor == 'emma':
-        self._runner = Emma(task_exports, self.context)
-      elif coverage_processor == 'cobertura':
+      if coverage_processor == 'cobertura':
         self._runner = Cobertura(task_exports, self.context)
+      elif coverage_processor == 'emma':
+        self._runner = Emma(task_exports, self.context)
       else:
-        raise TaskError('unknown coverage processor %s' % coverage_processor)
+        raise TaskError(f'unknown coverage processor {coverage_processor}')
     else:
       self._runner = _JUnitRunner(task_exports, self.context)
 

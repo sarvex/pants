@@ -39,11 +39,10 @@ class ScalastyleTest(NailgunTaskTestBase):
   def _create_scalastyle_config_file(self, rules=None):
     # put a default rule there if rules are not specified.
     rules = rules or ['org.scalastyle.scalariform.ImportGroupingChecker']
-    rule_section_xml = ''
-    for rule in rules:
-      rule_section_xml += dedent('''
+    rule_section_xml = ''.join(
+        dedent('''
         <check level="error" class="{rule}" enabled="true"></check>
-      '''.format(rule=rule))
+      '''.format(rule=rule)) for rule in rules)
     return self.create_file(
       relpath='scalastyle_config.xml',
       contents=dedent('''

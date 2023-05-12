@@ -45,7 +45,7 @@ class RunPrepCommand(Task):
       for item in cmdlines:
         cmdline = item.cmdline
         environ = item.environ
-        if not cmdline in completed_cmdlines:
+        if cmdline not in completed_cmdlines:
           completed_cmdlines.add(cmdline)
           stderr = workunit.output('stderr') if workunit else None
           try:

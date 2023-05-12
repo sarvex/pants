@@ -67,7 +67,7 @@ class PantsHandler(BaseHTTPServer.BaseHTTPRequestHandler):
         self._handle_runs('', {})
         return
 
-      self._send_content('Invalid GET request %s' % self.path, 'text/html')
+      self._send_content(f'Invalid GET request {self.path}', 'text/html')
     except (IOError, ValueError):
       pass  # Printing these errors gets annoying, and there's nothing to do about them anyway.
       #sys.stderr.write('Invalid GET request %s' % self.path)
@@ -126,9 +126,10 @@ class PantsHandler(BaseHTTPServer.BaseHTTPRequestHandler):
       with open(abspath, 'r') as infile:
         content = infile.read()
     else:
-      content = 'No file found at %s' % abspath
+      content = f'No file found at {abspath}'
     content_type = mimetypes.guess_type(abspath)[0] or 'text/plain'
-    if not content_type.startswith('text/') and not content_type == 'application/xml':
+    if (not content_type.startswith('text/')
+        and content_type != 'application/xml'):
       # Binary file. Display it as hex, split into lines.
       n = 120  # Display lines of this max size.
       content = repr(content)[1:-1]  # Will escape non-printables etc, dropping surrounding quotes.
@@ -214,8 +215,11 @@ class PantsHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 
     keyfunc = lambda x: datetime.fromtimestamp(float(x['timestamp']))
     sorted_run_infos = sorted(run_infos, key=keyfunc, reverse=True)
-    return [ { 'date_text': date_text(dt), 'run_infos': [x for x in infos] }
-             for dt, infos in itertools.groupby(sorted_run_infos, lambda x: keyfunc(x).date()) ]
+    return [{
+        'date_text': date_text(dt),
+        'run_infos': list(infos)
+    } for dt, infos in itertools.groupby(sorted_run_infos,
+                                         lambda x: keyfunc(x).date())]
 
   def _get_run_info_dict(self, run_id):
     """Get the RunInfo for a run, as a dict."""
@@ -275,9 +279,9 @@ class PantsHandler(BaseHTTPServer.BaseHTTPRequestHandler):
   def _client_allowed(self):
     """Check if client is allowed to connect to this server."""
     client_ip = self._client_address[0]
-    if not client_ip in self._settings.allowed_clients and \
-       not 'ALL' in self._settings.allowed_clients:
-      self._send_content('Access from host %s forbidden.' % client_ip, 'text/html')
+    if (client_ip not in self._settings.allowed_clients
+        and 'ALL' not in self._settings.allowed_clients):
+      self._send_content(f'Access from host {client_ip} forbidden.', 'text/html')
       return False
     return True
 
@@ -299,13 +303,13 @@ class PantsHandler(BaseHTTPServer.BaseHTTPRequestHandler):
     That is, make each path segment into a clickable element that takes you to that dir.
     """
     if relpath == '.':
-      breadcrumbs = []
-    else:
-      path_parts = [os.path.basename(self._root)] + relpath.split(os.path.sep)
-      path_links = ['/'.join(path_parts[1:i+1]) for i, name in enumerate(path_parts)]
-      breadcrumbs = [{'link_path': link_path, 'name': name }
-                     for link_path, name in zip(path_links, path_parts)]
-    return breadcrumbs
+      return []
+    path_parts = [os.path.basename(self._root)] + relpath.split(os.path.sep)
+    path_links = ['/'.join(path_parts[1:i+1]) for i, name in enumerate(path_parts)]
+    return [{
+        'link_path': link_path,
+        'name': name
+    } for link_path, name in zip(path_links, path_parts)]
 
   def _default_template_args(self, content_template):
     """Initialize template args."""
@@ -388,5 +392,5 @@ class ReportingServerManager(object):
     for pidfile_name in pidfile_names:
       m = re.match(r'port_(\d+)\.pid', pidfile_name)
       if m is not None:
-        ret.append((os.path.join(pidfile_dir, pidfile_name), int(m.group(1))))
+        ret.append((os.path.join(pidfile_dir, pidfile_name), int(m[1])))
     return ret

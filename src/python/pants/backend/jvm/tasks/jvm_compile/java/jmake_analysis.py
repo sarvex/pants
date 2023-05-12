@@ -23,7 +23,7 @@ class JMakeAnalysis(Analysis):
     merged_src_to_deps = {}
     for analysis in analyses:
       merged_pcd_entries.extend(analysis.pcd_entries)
-      merged_src_to_deps.update(analysis.src_to_deps)
+      merged_src_to_deps |= analysis.src_to_deps
     return JMakeAnalysis(merged_pcd_entries, merged_src_to_deps)
 
   def __init__(self, pcd_entries, src_to_deps):
@@ -105,5 +105,5 @@ class JMakeAnalysis(Analysis):
     for pcd_entry in self.pcd_entries:
       srcfile = pcd_entry[1]
       # In the file classes are represented with slashes, not dots. E.g., com/foo/bar/Baz.
-      src_to_classfiles[srcfile].append(pcd_entry[0] + '.class')
+      src_to_classfiles[srcfile].append(f'{pcd_entry[0]}.class')
     return src_to_classfiles

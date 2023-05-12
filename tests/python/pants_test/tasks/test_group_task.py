@@ -66,7 +66,7 @@ class GroupIteratorSingleTest(GroupIteratorTestBase):
 
     group_member, targets = chunks[0]
     self.assertEqual(self.red, type(group_member))
-    self.assertEqual(set([a_red, b_red, c_red, d_red]), set(targets))
+    self.assertEqual({a_red, b_red, c_red, d_red}, set(targets))
 
 
 class GroupIteratorMultipleTest(GroupIteratorTestBase):
@@ -83,19 +83,19 @@ class GroupIteratorMultipleTest(GroupIteratorTestBase):
 
     group_member, targets = chunks[0]
     self.assertEqual(self.red, type(group_member))
-    self.assertEqual(set([a_red]), set(targets))
+    self.assertEqual({a_red}, set(targets))
 
     group_member, targets = chunks[1]
     self.assertEqual(self.blue, type(group_member))
-    self.assertEqual(set([a_blue]), set(targets))
+    self.assertEqual({a_blue}, set(targets))
 
     group_member, targets = chunks[2]
     self.assertEqual(self.green, type(group_member))
-    self.assertEqual(set([a_green]), set(targets))
+    self.assertEqual({a_green}, set(targets))
 
     group_member, targets = chunks[3]
     self.assertEqual(self.red, type(group_member))
-    self.assertEqual(set([b_red, c_red]), set(targets))
+    self.assertEqual({b_red, c_red}, set(targets))
 
 
 class BaseGroupTaskTest(BaseTest):
@@ -112,9 +112,11 @@ class BaseGroupTaskTest(BaseTest):
 
     self.recorded_actions = []
     # NB: GroupTask has a cache of tasks by name... use a distinct name
-    self.group_task = GroupTask.named('jvm-compile-%s' % uuid.uuid4().hex,
-                                      ['classes_by_target', 'classes_by_source'],
-                                      ['test'])
+    self.group_task = GroupTask.named(
+        f'jvm-compile-{uuid.uuid4().hex}',
+        ['classes_by_target', 'classes_by_source'],
+        ['test'],
+    )
     self.group_task.add_member(self.group_member('javac', lambda t: t.is_java))
     self.group_task.add_member(self.group_member('scalac', lambda t: t.is_scala))
 
@@ -141,6 +143,9 @@ class BaseGroupTaskTest(BaseTest):
     return 'post_execute', tag, self._context
 
   def group_member(self, name, selector):
+
+
+
     class RecordingGroupMember(GroupMember):
       def __init__(me, *args, **kwargs):
         super(RecordingGroupMember, me).__init__(*args, **kwargs)
@@ -149,7 +154,7 @@ class BaseGroupTaskTest(BaseTest):
       def prepare(me, round_manager):
         self.recorded_actions.append(self.prepare_action(name))
 
-      def select(me, target):
+      def select(self, target):
         return selector(target)
 
       def prepare_execute(me, chunks):
@@ -163,6 +168,7 @@ class BaseGroupTaskTest(BaseTest):
 
       def post_execute(me):
         self.recorded_actions.append(self.post_execute_action(name))
+
 
     return RecordingGroupMember
 

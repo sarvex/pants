@@ -72,14 +72,12 @@ class ArtifactCache(object):
                             These must be under the artifact_root.
     :param bool overwrite: Skip check for existing, insert even if already in cache.
     """
-    missing_files = filter(lambda f: not os.path.exists(f), paths)
-    if missing_files:
+    if missing_files := filter(lambda f: not os.path.exists(f), paths):
       raise ArtifactCacheError('Tried to cache nonexistent files {0}'.format(missing_files))
 
-    if not overwrite:
-      if self.has(cache_key):
-        logger.debug('Skipping insert of existing artifact: ', cache_key)
-        return False
+    if not overwrite and self.has(cache_key):
+      logger.debug('Skipping insert of existing artifact: ', cache_key)
+      return False
 
     try:
       self.try_insert(cache_key, paths)

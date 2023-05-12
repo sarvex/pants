@@ -67,9 +67,8 @@ class RagelGen(CodeGen):
       output_file = os.path.join(output_dir, calculate_genfile(source))
       safe_mkdir_for(output_file)
 
-      args = [self.ragel_binary, lang_flag, '-o', output_file]
+      args = [self.ragel_binary, lang_flag, '-o', output_file, source]
 
-      args.append(source)
       self.context.log.debug('Executing: {args}'.format(args=' '.join(args)))
       process = subprocess.Popen(args)
       result = process.wait()
@@ -118,18 +117,16 @@ class RagelGen(CodeGen):
 def calculate_class_and_package(path):
   package, classname = None, None
   with open(path, 'r') as ragel:
-    for line in ragel.readlines():
+    for line in ragel:
       line = line.strip()
-      package_match = re.match(r'^package ([.a-zA-Z0-9]+);', line)
-      if package_match:
+      if package_match := re.match(r'^package ([.a-zA-Z0-9]+);', line):
         if package:
           raise TaskError('Multiple package declarations in {path}'.format(path=path))
-        package = package_match.group(1)
-      class_match = re.match(r'^public class ([A-Za-z0-9_]+).*', line)
-      if class_match:
+        package = package_match[1]
+      if class_match := re.match(r'^public class ([A-Za-z0-9_]+).*', line):
         if classname:
           raise TaskError('Multiple class declarations in {path}'.format(path=path))
-        classname = class_match.group(1)
+        classname = class_match[1]
 
   if not package:
     raise TaskError('Missing package declaration in {path}'.format(path=path))

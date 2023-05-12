@@ -28,7 +28,7 @@ class STTYSettings(object):
     self._stty_options = self._run_cmd('stty -g 2>/dev/null')
 
   def restore_ssty_options(self):
-    self._run_cmd('stty ' + self._stty_options)
+    self._run_cmd(f'stty {self._stty_options}')
 
   def _run_cmd(self, cmd):
     po = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)

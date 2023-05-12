@@ -26,7 +26,7 @@ class BuildsymsSanityTests(BaseTest):
   def test_exclude_unuseful(self):
     # These symbols snuck into old dictionaries, make sure they don't again:
     for unexpected in ['__builtins__', 'Target']:
-      self.assertTrue(unexpected not in self._syms.keys(), 'Found %s' % unexpected)
+      self.assertTrue(unexpected not in self._syms.keys(), f'Found {unexpected}')
 
   def test_java_library(self):
     # Good bet that 'java_library' exists and contains these text blobs

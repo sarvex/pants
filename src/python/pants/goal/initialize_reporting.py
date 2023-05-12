@@ -63,8 +63,7 @@ def initial_reporting(config, run_tracker):
 
   # Add some useful RunInfo.
   run_tracker.run_info.add_info('default_report', html_reporter.report_path())
-  port = ReportingServerManager.get_current_server_port()
-  if port:
+  if port := ReportingServerManager.get_current_server_port():
     run_tracker.run_info.add_info('report_url', 'http://localhost:%d/run/%s' % (port, run_id))
 
   return report
@@ -101,7 +100,7 @@ def update_reporting(options, is_quiet_task, run_tracker):
     # Also write plaintext logs to a file. This is completely separate from the html reports.
     safe_mkdir(options.logdir)
     run_id = run_tracker.run_info.get_info('id')
-    outfile = open(os.path.join(options.logdir, '%s.log' % run_id), 'w')
+    outfile = open(os.path.join(options.logdir, f'{run_id}.log'), 'w')
     settings = PlainTextReporter.Settings(log_level=log_level, outfile=outfile, color=False,
                                           indent=True, timing=True, cache_stats=True)
     logfile_reporter = PlainTextReporter(run_tracker, settings)

@@ -96,20 +96,15 @@ class WireGen(CodeGen, JvmToolTaskMixin):
       if target.payload.get_field_value('no_options'):
         args.append('--no_options')
 
-      service_writer = target.payload.service_writer
-      if service_writer:
+      if service_writer := target.payload.service_writer:
         args.append('--service_writer={0}'.format(service_writer))
 
-      registry_class = target.payload.registry_class
-      if registry_class:
+      if registry_class := target.payload.registry_class:
         args.append('--registry_class={0}'.format(registry_class))
 
-      for root in target.payload.roots:
-        args.append('--roots={0}'.format(root))
-
-      for enum_option in target.payload.enum_options:
-        args.append('--enum_options={0}'.format(enum_option))
-
+      args.extend('--roots={0}'.format(root) for root in target.payload.roots)
+      args.extend('--enum_options={0}'.format(enum_option)
+                  for enum_option in target.payload.enum_options)
       args.append('--proto_path={0}'.format(os.path.join(get_buildroot(),
                                                          SourceRoot.find(target))))
 
@@ -178,7 +173,7 @@ def calculate_genfiles(path, source, service_writer):
 
   # Wire generates a single type for all of the 'extends' declarations in this file.
   if protobuf_parse.extends:
-    types |= set(["Ext_{0}".format(protobuf_parse.filename)])
+    types |= {"Ext_{0}".format(protobuf_parse.filename)}
 
   genfiles = defaultdict(set)
   java_files = list(calculate_java_genfiles(protobuf_parse.package, types))

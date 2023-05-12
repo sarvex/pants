@@ -278,8 +278,7 @@ class Target(AbstractTarget):
     :return: True if the target contains sources that match the optional extension suffix
     :rtype: bool
     """
-    sources_field = self.payload.get_field('sources')
-    if sources_field:
+    if sources_field := self.payload.get_field('sources'):
       return sources_field.has_sources(extension)
     else:
       return False
@@ -435,9 +434,9 @@ class Target(AbstractTarget):
       as its single argument and returns True if the target should passed to ``work``.
     """
     if not callable(work):
-      raise ValueError('work must be callable but was %s' % work)
+      raise ValueError(f'work must be callable but was {work}')
     if predicate and not callable(predicate):
-      raise ValueError('predicate must be callable but was %s' % predicate)
+      raise ValueError(f'predicate must be callable but was {predicate}')
     self._build_graph.walk_transitive_dependency_graph([self.address], work, predicate)
 
   def closure(self):
@@ -475,4 +474,4 @@ class Target(AbstractTarget):
 
   def __repr__(self):
     addr = self.address if hasattr(self, 'address') else 'address not yet set'
-    return "%s(%s)" % (type(self).__name__, addr)
+    return f"{type(self).__name__}({addr})"

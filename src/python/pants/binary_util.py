@@ -102,10 +102,8 @@ class BinaryUtil(object):
       return self.binary_base_path_strategy(base_path, version, name)
 
     sysname, _, release, _, machine = os.uname()
-    os_id = _ID_BY_OS[sysname.lower()]
-    if os_id:
-      middle_path = _PATH_BY_ID[os_id(release, machine)]
-      if middle_path:
+    if os_id := _ID_BY_OS[sysname.lower()]:
+      if middle_path := _PATH_BY_ID[os_id(release, machine)]:
         return os.path.join(base_path, *(middle_path + [version, name]))
     raise BinaryUtil.MissingMachineInfo('No {binary} binary found for: {machine_info}'
         .format(binary=name, machine_info=(sysname, release, machine)))
@@ -157,7 +155,7 @@ class BinaryUtil(object):
     binary_path = self.select_binary_base_path(base_path, version, name)
     bootstrapped_binary_path = os.path.join(bootstrap_dir, binary_path)
     if not os.path.exists(bootstrapped_binary_path):
-      downloadpath = bootstrapped_binary_path + '~'
+      downloadpath = f'{bootstrapped_binary_path}~'
       try:
         with self.select_binary_stream(base_path, version, name) as stream:
           with safe_open(downloadpath, 'wb') as bootstrapped_binary:
@@ -201,7 +199,7 @@ def safe_args(args,
     def create_argfile(fp):
       fp.write(delimiter.join(args))
       fp.close()
-      return [quoter(fp.name) if quoter else '@%s' % fp.name]
+      return [quoter(fp.name) if quoter else f'@{fp.name}']
 
     if argfile:
       try:
@@ -245,7 +243,7 @@ def ui_open(*files):
   """Attempts to open the given files using the preferred native viewer or editor."""
   if files:
     osname = os.uname()[0].lower()
-    if not osname in _OPENER_BY_OS:
-      print('Sorry, open currently not supported for ' + osname)
+    if osname not in _OPENER_BY_OS:
+      print(f'Sorry, open currently not supported for {osname}')
     else:
       _OPENER_BY_OS[osname](files)

@@ -34,8 +34,9 @@ def execute_java(classpath, main, jvm_options=None, args=None, executor=None,
   """
   executor = executor or SubprocessExecutor()
   if not isinstance(executor, Executor):
-    raise ValueError('The executor argument must be a java Executor instance, give %s of type %s'
-                     % (executor, type(executor)))
+    raise ValueError(
+        f'The executor argument must be a java Executor instance, give {executor} of type {type(executor)}'
+    )
 
   runner = executor.runner(classpath, main, args=args, jvm_options=jvm_options, cwd=cwd)
   workunit_name = workunit_name or main
@@ -62,18 +63,18 @@ def execute_runner(runner, workunit_factory=None, workunit_name=None, workunit_l
   Raises `pants.java.Executor.Error` if there was a problem launching java itself.
   """
   if not isinstance(runner, Executor.Runner):
-    raise ValueError('The runner argument must be a java Executor.Runner instance, '
-                     'given %s of type %s' % (runner, type(runner)))
+    raise ValueError(
+        f'The runner argument must be a java Executor.Runner instance, given {runner} of type {type(runner)}'
+    )
 
   if workunit_factory is None:
     return runner.run()
-  else:
-    workunit_labels = [
-        WorkUnit.TOOL,
-        WorkUnit.NAILGUN if isinstance(runner.executor, NailgunExecutor) else WorkUnit.JVM
-    ] + (workunit_labels or [])
+  workunit_labels = [
+      WorkUnit.TOOL,
+      WorkUnit.NAILGUN if isinstance(runner.executor, NailgunExecutor) else WorkUnit.JVM
+  ] + (workunit_labels or [])
 
-    with workunit_factory(name=workunit_name, labels=workunit_labels, cmd=runner.cmd) as workunit:
-      ret = runner.run(stdout=workunit.output('stdout'), stderr=workunit.output('stderr'), cwd=cwd)
-      workunit.set_outcome(WorkUnit.FAILURE if ret else WorkUnit.SUCCESS)
-      return ret
+  with workunit_factory(name=workunit_name, labels=workunit_labels, cmd=runner.cmd) as workunit:
+    ret = runner.run(stdout=workunit.output('stdout'), stderr=workunit.output('stderr'), cwd=cwd)
+    workunit.set_outcome(WorkUnit.FAILURE if ret else WorkUnit.SUCCESS)
+    return ret

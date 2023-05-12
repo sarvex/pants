@@ -74,9 +74,9 @@ class PlainTextReporter(Reporter):
     if workunit.parent and workunit.parent.has_label(WorkUnit.MULTITOOL):
       # For brevity, we represent each consecutive invocation of a multitool with a dot.
       self.emit(b'.')
-    elif not workunit.parent or \
-        all([not x.has_label(WorkUnit.MULTITOOL) and not x.has_label(WorkUnit.BOOTSTRAP)
-             for x in workunit.parent.ancestors()]):
+    elif not workunit.parent or all(not x.has_label(WorkUnit.MULTITOOL)
+                                    and not x.has_label(WorkUnit.BOOTSTRAP)
+                                    for x in workunit.parent.ancestors()):
       # Bootstrapping can be chatty, so don't show anything for its sub-workunits.
       self.emit(b'\n%s %s %s[%s]' %
                        (workunit.start_time_string(),

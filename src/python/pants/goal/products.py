@@ -22,7 +22,7 @@ class RootedProducts(object):
   def add_abs_paths(self, abs_paths):
     for abs_path in abs_paths:
       if not abs_path.startswith(self._root):
-        raise Exception('%s is not under %s' % (abs_path, self._root))
+        raise Exception(f'{abs_path} is not under {self._root}')
       self._rel_paths.add(os.path.relpath(abs_path, self._root))
 
   def add_rel_paths(self, rel_paths):

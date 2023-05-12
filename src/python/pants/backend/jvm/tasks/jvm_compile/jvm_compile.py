@@ -158,11 +158,11 @@ class JvmCompile(NailgunTaskBase, GroupMember, JvmToolTaskMixin):
   # ------------
   @staticmethod
   def _analysis_for_target(analysis_dir, target):
-    return os.path.join(analysis_dir, target.id + '.analysis')
+    return os.path.join(analysis_dir, f'{target.id}.analysis')
 
   @staticmethod
   def _portable_analysis_for_target(analysis_dir, target):
-    return JvmCompile._analysis_for_target(analysis_dir, target) + '.portable'
+    return f'{JvmCompile._analysis_for_target(analysis_dir, target)}.portable'
 
   def __init__(self, *args, **kwargs):
     super(JvmCompile, self).__init__(*args, **kwargs)
@@ -293,10 +293,7 @@ class JvmCompile(NailgunTaskBase, GroupMember, JvmToolTaskMixin):
 
     # Update the classpath for us and for downstream tasks.
     egroups = self.context.products.get_data('exclusives_groups')
-    all_group_ids = set()
-    for t in all_targets:
-      all_group_ids.add(egroups.get_group_key_for_target(t))
-
+    all_group_ids = {egroups.get_group_key_for_target(t) for t in all_targets}
     for conf in self._confs:
       for group_id in all_group_ids:
         egroups.update_compatible_classpaths(group_id, [(conf, self._classes_dir)])
@@ -313,9 +310,10 @@ class JvmCompile(NailgunTaskBase, GroupMember, JvmToolTaskMixin):
     if invalidation_check.invalid_vts:
       # The analysis for invalid and deleted sources is no longer valid.
       invalid_targets = [vt.target for vt in invalidation_check.invalid_vts]
-      invalid_sources_by_target = {}
-      for tgt in invalid_targets:
-        invalid_sources_by_target[tgt] = self._sources_by_target[tgt]
+      invalid_sources_by_target = {
+          tgt: self._sources_by_target[tgt]
+          for tgt in invalid_targets
+      }
       invalid_sources = list(itertools.chain.from_iterable(invalid_sources_by_target.values()))
       self._deleted_sources = self._compute_deleted_sources()
 
@@ -375,16 +373,16 @@ class JvmCompile(NailgunTaskBase, GroupMember, JvmToolTaskMixin):
     if self._locally_changed_targets_heuristic_limit:
       locally_changed_targets = self._find_locally_changed_targets(sources_by_target)
       if locally_changed_targets and \
-              len(locally_changed_targets) > self._locally_changed_targets_heuristic_limit:
+                len(locally_changed_targets) > self._locally_changed_targets_heuristic_limit:
         locally_changed_targets = None
 
     # Invalidation check. Everything inside the with block must succeed for the
     # invalid targets to become valid.
     with self.invalidated(relevant_targets,
-                          invalidate_dependents=True,
-                          partition_size_hint=self._partition_size_hint,
-                          locally_changed_targets=locally_changed_targets,
-                          fingerprint_strategy=self._jvm_fingerprint_strategy()) as invalidation_check:
+                            invalidate_dependents=True,
+                            partition_size_hint=self._partition_size_hint,
+                            locally_changed_targets=locally_changed_targets,
+                            fingerprint_strategy=self._jvm_fingerprint_strategy()) as invalidation_check:
       if invalidation_check.invalid_vts:
         # Find the invalid sources for this chunk.
         invalid_targets = [vt.target for vt in invalidation_check.invalid_vts]
@@ -432,7 +430,7 @@ class JvmCompile(NailgunTaskBase, GroupMember, JvmToolTaskMixin):
           # No exception was thrown, therefore the compile succeded and analysis_file is now valid.
           if os.path.exists(analysis_file):  # The compilation created an analysis.
             # Merge the newly-valid analysis with our global valid analysis.
-            new_valid_analysis = analysis_file + '.valid.new'
+            new_valid_analysis = f'{analysis_file}.valid.new'
             if self._analysis_parser.is_nonempty_analysis(self._analysis_file):
               with self.context.new_workunit(name='update-upstream-analysis'):
                 self._analysis_tools.merge_from_paths([self._analysis_file, analysis_file],
@@ -462,8 +460,8 @@ class JvmCompile(NailgunTaskBase, GroupMember, JvmToolTaskMixin):
           if self._analysis_parser.is_nonempty_analysis(self._invalid_analysis_file):
             with self.context.new_workunit(name='trim-downstream-analysis'):
               # Trim out the newly-valid sources from our global invalid analysis.
-              new_invalid_analysis = analysis_file + '.invalid.new'
-              discarded_invalid_analysis = analysis_file + '.invalid.discard'
+              new_invalid_analysis = f'{analysis_file}.invalid.new'
+              discarded_invalid_analysis = f'{analysis_file}.invalid.discard'
               self._analysis_tools.split_to_paths(self._invalid_analysis_file,
                 [(sources, discarded_invalid_analysis)], new_invalid_analysis)
               self.move(new_invalid_analysis, self._invalid_analysis_file)
@@ -610,8 +608,8 @@ class JvmCompile(NailgunTaskBase, GroupMember, JvmToolTaskMixin):
             (vt,
              artifacts + [JvmCompile._portable_analysis_for_target(self._analysis_tmpdir, target)]))
 
-    update_artifact_cache_work = self.get_update_artifact_cache_work(vts_artifactfiles_pairs)
-    if update_artifact_cache_work:
+    if update_artifact_cache_work := self.get_update_artifact_cache_work(
+        vts_artifactfiles_pairs):
       work_chain = [
         Work(self._analysis_tools.split_to_paths, splits_args_tuples, 'split'),
         Work(self._analysis_tools.relativize, relativize_args_tuples, 'relativize'),
@@ -730,13 +728,14 @@ class JvmCompile(NailgunTaskBase, GroupMember, JvmToolTaskMixin):
           with open_zip(cp_entry, 'r') as jar:
             for cls in jar.namelist():
               # First jar with a given class wins, just like when classloading.
-              if cls.endswith(b'.class') and not cls in self._upstream_class_to_path:
+              if (cls.endswith(b'.class')
+                  and cls not in self._upstream_class_to_path):
                 self._upstream_class_to_path[cls] = cp_entry
         elif os.path.isdir(cp_entry):
           for dirpath, _, filenames in safe_walk(cp_entry, followlinks=True):
             for f in filter(lambda x: x.endswith('.class'), filenames):
               cls = os.path.relpath(os.path.join(dirpath, f), cp_entry)
-              if not cls in self._upstream_class_to_path:
+              if cls not in self._upstream_class_to_path:
                 self._upstream_class_to_path[cls] = os.path.join(dirpath, f)
     return self._upstream_class_to_path
 
@@ -779,7 +778,7 @@ class JvmCompile(NailgunTaskBase, GroupMember, JvmToolTaskMixin):
     """Returns a map target->sources for the specified targets."""
     if self._sources_by_target is None:
       raise TaskError('self._sources_by_target not computed yet.')
-    return dict((t, self._sources_by_target.get(t, [])) for t in targets)
+    return {t: self._sources_by_target.get(t, []) for t in targets}
 
   # Work in a tmpdir so we don't stomp the main analysis files on error.
   # The tmpdir is cleaned up in a shutdown hook, because background work

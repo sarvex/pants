@@ -82,6 +82,7 @@ class Filter(ConsoleTask):
     def filter_for_address(spec):
       matches = _get_targets(spec)
       return lambda target: target in matches
+
     self._filters.extend(_create_filters(self.get_options().target, filter_for_address))
 
     def filter_for_type(name):
@@ -90,17 +91,18 @@ class Filter(ConsoleTask):
       try:
         # Try to do a fully qualified import 1st for filtering on custom types.
         from_list, module, type_name = name.rsplit('.', 2)
-        module = __import__('%s.%s' % (from_list, module), fromlist=[from_list])
+        module = __import__(f'{from_list}.{module}', fromlist=[from_list])
         target_type = getattr(module, type_name)
       except (ImportError, ValueError):
         # Fall back on pants provided target types.
         registered_aliases = self.context.build_file_parser.registered_aliases()
         if name not in registered_aliases.targets:
-          raise TaskError('Invalid type name: %s' % name)
+          raise TaskError(f'Invalid type name: {name}')
         target_type = registered_aliases.targets[name]
       if not issubclass(target_type, Target):
-        raise TaskError('Not a Target type: %s' % name)
+        raise TaskError(f'Not a Target type: {name}')
       return lambda target: isinstance(target, target_type)
+
     self._filters.extend(_create_filters(self.get_options().type, filter_for_type))
 
     def filter_for_ancestor(spec):
@@ -109,11 +111,13 @@ class Filter(ConsoleTask):
       for ancestor in ancestors:
         ancestor.walk(children.add)
       return lambda target: target in children
+
     self._filters.extend(_create_filters(self.get_options().ancestor, filter_for_ancestor))
 
     def filter_for_regex(regex):
       parser = re.compile(regex)
       return lambda target: parser.search(str(target.address.spec))
+
     self._filters.extend(_create_filters(self.get_options().regex, filter_for_regex))
 
   def console_output(self, _):

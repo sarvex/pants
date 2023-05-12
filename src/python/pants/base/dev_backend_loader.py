@@ -44,7 +44,7 @@ def load_backend(build_configuration, backend_package):
     provides the plugin entrypoints.
   :raises: :class:``pants.base.exceptions.BuildConfigurationError`` if there is a problem loading
     the build configuration."""
-  backend_module = backend_package + '.register'
+  backend_module = f'{backend_package}.register'
   try:
     module = __import__(backend_module,
                         {},  # globals

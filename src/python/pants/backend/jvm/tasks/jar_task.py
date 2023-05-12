@@ -114,13 +114,15 @@ class Jar(object):
     :param string dest: the path the source file or directory should have in this jar
     """
     if not src or not isinstance(src, Compatibility.string):
-      raise ValueError('The src path must be a non-empty string, got %s of type %s.'
-                       % (src, type(src)))
+      raise ValueError(
+          f'The src path must be a non-empty string, got {src} of type {type(src)}.'
+      )
     if dest and not isinstance(dest, Compatibility.string):
-      raise ValueError('The dest entry path must be a non-empty string, got %s of type %s.'
-                       % (dest, type(dest)))
+      raise ValueError(
+          f'The dest entry path must be a non-empty string, got {dest} of type {type(dest)}.'
+      )
     if not os.path.isdir(src) and not dest:
-      raise self.Error('Source file %s must have a jar destination specified' % src)
+      raise self.Error(f'Source file {src} must have a jar destination specified')
 
     self._add_entry(self.FileSystemEntry(src, dest))
 
@@ -159,24 +161,24 @@ class Jar(object):
     args = []
 
     if self._main:
-      args.append('-main=%s' % self._main)
+      args.append(f'-main={self._main}')
 
     if self._classpath:
-      args.append('-classpath=%s' % ','.join(self._classpath))
+      args.append(f"-classpath={','.join(self._classpath)}")
 
     with temporary_dir() as stage_dir:
       if self._manifest:
-        args.append('-manifest=%s' % self._manifest.materialize(stage_dir))
+        args.append(f'-manifest={self._manifest.materialize(stage_dir)}')
 
       if self._entries:
         def as_cli_entry(entry):
           src = entry.materialize(stage_dir)
-          return '%s=%s' % (src, entry.dest) if entry.dest else src
+          return f'{src}={entry.dest}' if entry.dest else src
 
-        args.append('-files=%s' % ','.join(map(as_cli_entry, self._entries)))
+        args.append(f"-files={','.join(map(as_cli_entry, self._entries))}")
 
       if self._jars:
-        args.append('-jars=%s' % ','.join(self._jars))
+        args.append(f"-jars={','.join(self._jars)}")
 
       yield args
 
@@ -206,7 +208,7 @@ class JarTask(NailgunTask):
   def _action_name(cls, action):
     name = cls._DUPLICATE_ACTION_TO_NAME.get(action)
     if name is None:
-      raise ValueError('Unrecognized duplicate action: %s' % action)
+      raise ValueError(f'Unrecognized duplicate action: {action}')
     return name
 
   def __init__(self, *args, **kwargs):
@@ -242,15 +244,16 @@ class JarTask(NailgunTask):
     try:
       yield jar
     except jar.Error as e:
-      raise TaskError('Failed to write to jar at %s: %s' % (path, e))
+      raise TaskError(f'Failed to write to jar at {path}: {e}')
 
     with jar._render_jar_tool_args() as args:
       if args:  # Don't build an empty jar
-        args.append('-update=%s' % self._flag(not overwrite))
-        args.append('-compress=%s' % self._flag(compressed))
+        args.append(f'-update={self._flag(not overwrite)}')
+        args.append(f'-compress={self._flag(compressed)}')
 
         jar_rules = jar_rules or JarRules.default()
-        args.append('-default_action=%s' % self._action_name(jar_rules.default_dup_action))
+        args.append(
+            f'-default_action={self._action_name(jar_rules.default_dup_action)}')
 
         skip_patterns = []
         duplicate_actions = []
@@ -259,16 +262,16 @@ class JarTask(NailgunTask):
           if isinstance(rule, Skip):
             skip_patterns.append(rule.apply_pattern)
           elif isinstance(rule, Duplicate):
-            duplicate_actions.append('%s=%s' % (rule.apply_pattern.pattern,
-                                                self._action_name(rule.action)))
+            duplicate_actions.append(
+                f'{rule.apply_pattern.pattern}={self._action_name(rule.action)}')
           else:
-            raise ValueError('Unrecognized rule: %s' % rule)
+            raise ValueError(f'Unrecognized rule: {rule}')
 
         if skip_patterns:
-          args.append('-skip=%s' % ','.join(p.pattern for p in skip_patterns))
+          args.append(f"-skip={','.join(p.pattern for p in skip_patterns)}")
 
         if duplicate_actions:
-          args.append('-policies=%s' % ','.join(duplicate_actions))
+          args.append(f"-policies={','.join(duplicate_actions)}")
 
         args.append(path)
 

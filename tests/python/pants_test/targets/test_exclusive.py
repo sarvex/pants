@@ -24,9 +24,9 @@ class ExclusivesTargetTest(BaseTest):
   def test_propagation(self):
     a, b, c, d, e = self.setup_targets()
     d_excl = d.get_all_exclusives()
-    self.assertEquals(d_excl['a'], set(['1']))
+    self.assertEquals(d_excl['a'], {'1'})
     e_excl = e.get_all_exclusives()
-    self.assertEquals(e_excl['a'], set(['1', '2']))
+    self.assertEquals(e_excl['a'], {'1', '2'})
 
   def test_partitioning(self):
     # Target e has conflicts; in this test, we want to check that partitioning
@@ -39,5 +39,5 @@ class ExclusivesTargetTest(BaseTest):
       check_exclusives_task = CheckExclusives(context, workdir)
       check_exclusives_task.execute()
     egroups = context.products.get_data('exclusives_groups')
-    self.assertEquals(egroups.get_targets_for_group_key("a=1"), set([a, b, d]))
-    self.assertEquals(egroups.get_targets_for_group_key("a=2"), set([c]))
+    self.assertEquals(egroups.get_targets_for_group_key("a=1"), {a, b, d})
+    self.assertEquals(egroups.get_targets_for_group_key("a=2"), {c})

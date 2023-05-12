@@ -105,7 +105,7 @@ class LocalArtifactCache(BaseLocalArtifactCache):
   def _cache_file_for_key(self, cache_key):
     # Note: it's important to use the id as well as the hash, because two different targets
     # may have the same hash if both have no sources, but we may still want to differentiate them.
-    return os.path.join(self._cache_root, cache_key.id, cache_key.hash) + '.tgz'
+    return f'{os.path.join(self._cache_root, cache_key.id, cache_key.hash)}.tgz'
 
 
 class TempLocalArtifactCache(BaseLocalArtifactCache):

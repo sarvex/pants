@@ -97,7 +97,7 @@ class Scalastyle(NailgunTask, JvmToolTaskMixin):
             setting=self._CONFIG_SECTION_EXCLUDES_OPTION,
             file=excludes_file))
       with open(excludes_file) as fh:
-        for pattern in fh.readlines():
+        for pattern in fh:
           scalastyle_excludes.add(re.compile(pattern.strip()))
           self.context.log.debug(
             'Scalastyle file exclude pattern: {pattern}'.format(pattern=pattern))
@@ -126,14 +126,12 @@ class Scalastyle(NailgunTask, JvmToolTaskMixin):
   def _should_include_source(self, source_filename):
     if not self._scalastyle_excludes:
       return True
-    for exclude in self._scalastyle_excludes:
-      if exclude.match(source_filename):
-        return False
-    return True
+    return not any(
+        exclude.match(source_filename) for exclude in self._scalastyle_excludes)
 
   def _get_non_excluded_scala_sources(self, scala_targets):
     # Get all the sources from the targets with the path relative to build root.
-    scala_sources = list()
+    scala_sources = []
     for target in scala_targets:
       scala_sources.extend(target.sources_relative_to_buildroot())
 

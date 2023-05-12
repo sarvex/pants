@@ -59,7 +59,7 @@ def git_version():
   assert process.returncode == 0, "Failed to determine git version."
   # stdout is like 'git version 1.9.1.598.g9119e8b\n'  We want '1.9.1.598'
   matches = re.search(r'\s(\d+(?:\.\d+)*)[\s\.]', stdout)
-  return Version(matches.group(1))
+  return Version(matches[1])
 
 
 @pytest.mark.skipif("git_version() < Version('1.7.10')")
@@ -72,33 +72,33 @@ class GitTest(unittest.TestCase):
     subprocess.check_call(['git', 'remote', 'add', remote_name, remote])
 
   @classmethod
-  def setUp(self):
-    self.origin = safe_mkdtemp()
-    with pushd(self.origin):
+  def setUp(cls):
+    cls.origin = safe_mkdtemp()
+    with pushd(cls.origin):
       subprocess.check_call(['git', 'init', '--bare'])
 
-    self.gitdir = safe_mkdtemp()
-    self.worktree = safe_mkdtemp()
+    cls.gitdir = safe_mkdtemp()
+    cls.worktree = safe_mkdtemp()
 
-    self.readme_file = os.path.join(self.worktree, 'README')
+    cls.readme_file = os.path.join(cls.worktree, 'README')
 
-    with environment_as(GIT_DIR=self.gitdir, GIT_WORK_TREE=self.worktree):
-      self.init_repo('depot', self.origin)
+    with environment_as(GIT_DIR=cls.gitdir, GIT_WORK_TREE=cls.worktree):
+      cls.init_repo('depot', cls.origin)
 
-      touch(self.readme_file)
+      touch(cls.readme_file)
       subprocess.check_call(['git', 'add', 'README'])
       subprocess.check_call(['git', 'commit', '-am', 'initial commit with decode -> \x81b'])
       subprocess.check_call(['git', 'tag', 'first'])
       subprocess.check_call(['git', 'push', '--tags', 'depot', 'master'])
       subprocess.check_call(['git', 'branch', '--set-upstream', 'master', 'depot/master'])
 
-      with safe_open(self.readme_file, 'w') as readme:
+      with safe_open(cls.readme_file, 'w') as readme:
         readme.write('Hello World.')
       subprocess.check_call(['git', 'commit', '-am', 'Update README.'])
 
-    self.clone2 = safe_mkdtemp()
-    with pushd(self.clone2):
-      self.init_repo('origin', self.origin)
+    cls.clone2 = safe_mkdtemp()
+    with pushd(cls.clone2):
+      cls.init_repo('origin', cls.origin)
       subprocess.check_call(['git', 'pull', '--tags', 'origin', 'master:master'])
 
       with safe_open(os.path.realpath('README'), 'a') as readme:
@@ -106,7 +106,7 @@ class GitTest(unittest.TestCase):
       subprocess.check_call(['git', 'commit', '-am', 'Update README 2.'])
       subprocess.check_call(['git', 'push', '--tags', 'origin', 'master'])
 
-    self.git = Git(gitdir=self.gitdir, worktree=self.worktree)
+    cls.git = Git(gitdir=cls.gitdir, worktree=cls.worktree)
 
   @staticmethod
   @contextmanager
@@ -119,15 +119,15 @@ class GitTest(unittest.TestCase):
         subprocess.check_call(['git', 'remote', 'remove', remote_name])
 
   @classmethod
-  def tearDown(self):
-    safe_rmtree(self.origin)
-    safe_rmtree(self.gitdir)
-    safe_rmtree(self.worktree)
-    safe_rmtree(self.clone2)
+  def tearDown(cls):
+    safe_rmtree(cls.origin)
+    safe_rmtree(cls.gitdir)
+    safe_rmtree(cls.worktree)
+    safe_rmtree(cls.clone2)
 
   def test_integration(self):
     self.assertEqual(set(), self.git.changed_files())
-    self.assertEqual(set(['README']), self.git.changed_files(from_commit='HEAD^'))
+    self.assertEqual({'README'}, self.git.changed_files(from_commit='HEAD^'))
 
     tip_sha = self.git.commit_id
     self.assertTrue(tip_sha)
@@ -157,8 +157,9 @@ class GitTest(unittest.TestCase):
     edit_readme()
     with open(os.path.join(self.worktree, 'INSTALL'), 'w') as untracked:
       untracked.write('make install')
-    self.assertEqual(set(['README']), self.git.changed_files())
-    self.assertEqual(set(['README', 'INSTALL']), self.git.changed_files(include_untracked=True))
+    self.assertEqual({'README'}, self.git.changed_files())
+    self.assertEqual({'README', 'INSTALL'},
+                     self.git.changed_files(include_untracked=True))
 
     # confirm that files outside of a given relative_to path are ignored
     self.assertEqual(set(), self.git.changed_files(relative_to='non-existent'))
@@ -195,7 +196,7 @@ class GitTest(unittest.TestCase):
         with safe_open(os.path.realpath('CHANGES'), 'w') as changes:
           changes.write('none')
         subprocess.check_call(['git', 'add', 'CHANGES'])
-        self.assertEqual(set(['README', 'CHANGES']), git.changed_files(from_commit='first'))
+        self.assertEqual({'README', 'CHANGES'}, git.changed_files(from_commit='first'))
 
         self.assertEqual('master', git.branch_name)
         self.assertEqual('second', git.tag_name, msg='annotated tags should be found')
@@ -230,7 +231,7 @@ class GitTest(unittest.TestCase):
   def test_refresh_with_conflict(self):
     with environment_as(GIT_DIR=self.gitdir, GIT_WORK_TREE=self.worktree):
       self.assertEqual(set(), self.git.changed_files())
-      self.assertEqual(set(['README']), self.git.changed_files(from_commit='HEAD^'))
+      self.assertEqual({'README'}, self.git.changed_files(from_commit='HEAD^'))
 
       # Create a change on this branch that is incompatible with the change to master
       with open(self.readme_file, 'w') as readme:
@@ -242,7 +243,10 @@ class GitTest(unittest.TestCase):
       with self.assertRaises(Scm.LocalException):
         self.git.refresh(leave_clean=False)
       # The repo is dirty
-      self.assertEquals(set(['README']), self.git.changed_files(include_untracked=True, from_commit='HEAD'))
+      self.assertEquals(
+          {'README'},
+          self.git.changed_files(include_untracked=True, from_commit='HEAD'),
+      )
 
       with environment_as(GIT_DIR=self.gitdir, GIT_WORK_TREE=self.worktree):
         subprocess.check_call(['git', 'reset', '--hard', 'HEAD'])

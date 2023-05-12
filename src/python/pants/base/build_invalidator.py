@@ -50,11 +50,11 @@ class CacheKeyGenerator(object):
     """
     if len(cache_keys) == 1:
       return cache_keys[0]
-    else:
-      combined_id = Target.maybe_readable_combine_ids(cache_key.id for cache_key in cache_keys)
-      combined_hash = hash_all(sorted(cache_key.hash for cache_key in cache_keys))
-      summed_chunking_units = sum([cache_key.num_chunking_units for cache_key in cache_keys])
-      return CacheKey(combined_id, combined_hash, summed_chunking_units)
+    combined_id = Target.maybe_readable_combine_ids(cache_key.id for cache_key in cache_keys)
+    combined_hash = hash_all(sorted(cache_key.hash for cache_key in cache_keys))
+    summed_chunking_units = sum(cache_key.num_chunking_units
+                                for cache_key in cache_keys)
+    return CacheKey(combined_id, combined_hash, summed_chunking_units)
 
   def __init__(self, cache_key_gen_version=None):
     """

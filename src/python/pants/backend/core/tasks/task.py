@@ -187,7 +187,7 @@ class TaskBase(AbstractClass):
     return bool(self._write_artifact_cache_spec) and self.get_options().write_to_artifact_cache
 
   @classmethod
-  def product_types(self):
+  def product_types(cls):
     """The list of products this Task produces. Set the product type(s) for this
     task i.e. the product type(s) this task creates e.g ['classes'].
 
@@ -281,7 +281,7 @@ class TaskBase(AbstractClass):
     if invalidation_check.invalid_vts and self.artifact_cache_reads_enabled():
       with self.context.new_workunit('cache'):
         cached_vts, uncached_vts = \
-          self.check_artifact_cache(self.check_artifact_cache_for(invalidation_check))
+            self.check_artifact_cache(self.check_artifact_cache_for(invalidation_check))
       if cached_vts:
         cached_targets = [vt.target for vt in cached_vts]
         for t in cached_targets:
@@ -296,11 +296,10 @@ class TaskBase(AbstractClass):
           self._report_targets('No cached artifacts for ', uncached_targets, '.')
       # Now that we've checked the cache, re-partition whatever is still invalid.
       invalidation_check = \
-        InvalidationCheck(invalidation_check.all_vts, uncached_vts, partition_size_hint, colors)
+          InvalidationCheck(invalidation_check.all_vts, uncached_vts, partition_size_hint, colors)
 
     if not silent:
       targets = []
-      num_invalid_partitions = len(invalidation_check.invalid_vts_partitioned)
       for vt in invalidation_check.invalid_vts_partitioned:
         targets.extend(vt.targets)
 
@@ -309,9 +308,10 @@ class TaskBase(AbstractClass):
       if len(targets):
         msg_elements = ['Invalidated ',
                         items_to_report_element([t.address.reference() for t in targets], 'target')]
-        if len(payloads) > 0:
+        if payloads:
           msg_elements.append(' containing ')
           msg_elements.append(items_to_report_element(payloads, 'payload file'))
+        num_invalid_partitions = len(invalidation_check.invalid_vts_partitioned)
         if num_invalid_partitions > 1:
           msg_elements.append(' in %d target partitions' % num_invalid_partitions)
         msg_elements.append('.')
@@ -380,8 +380,8 @@ class TaskBase(AbstractClass):
       - vts is single VersionedTargetSet.
       - artifactfiles is a list of absolute paths to artifacts for the VersionedTargetSet.
     """
-    update_artifact_cache_work = self.get_update_artifact_cache_work(vts_artifactfiles_pairs)
-    if update_artifact_cache_work:
+    if update_artifact_cache_work := self.get_update_artifact_cache_work(
+        vts_artifactfiles_pairs):
       self.context.submit_background_work_chain([update_artifact_cache_work],
                                                 parent_workunit_name='cache')
 
@@ -392,27 +392,25 @@ class TaskBase(AbstractClass):
       - vts is single VersionedTargetSet.
       - artifactfiles is a list of paths to artifacts for the VersionedTargetSet.
     """
-    cache = cache or self.get_artifact_cache()
-    if cache:
-      if len(vts_artifactfiles_pairs) == 0:
-        return None
-        # Do some reporting.
-      targets = set()
-      for vts, _ in vts_artifactfiles_pairs:
-        targets.update(vts.targets)
-      self._report_targets('Caching artifacts for ', list(targets), '.')
-
-      always_overwrite = self.get_options().overwrite_cache_artifacts
-
-      # Cache the artifacts.
-      args_tuples = []
-      for vts, artifactfiles in vts_artifactfiles_pairs:
-        overwrite = always_overwrite or vts.cache_key in self._cache_key_errors
-        args_tuples.append((cache, vts.cache_key, artifactfiles, overwrite))
-
-      return Work(lambda x: self.context.subproc_map(call_insert, x), [(args_tuples,)], 'insert')
-    else:
+    if not (cache := cache or self.get_artifact_cache()):
       return None
+    if len(vts_artifactfiles_pairs) == 0:
+      return None
+      # Do some reporting.
+    targets = set()
+    for vts, _ in vts_artifactfiles_pairs:
+      targets.update(vts.targets)
+    self._report_targets('Caching artifacts for ', list(targets), '.')
+
+    always_overwrite = self.get_options().overwrite_cache_artifacts
+
+    # Cache the artifacts.
+    args_tuples = []
+    for vts, artifactfiles in vts_artifactfiles_pairs:
+      overwrite = always_overwrite or vts.cache_key in self._cache_key_errors
+      args_tuples.append((cache, vts.cache_key, artifactfiles, overwrite))
+
+    return Work(lambda x: self.context.subproc_map(call_insert, x), [(args_tuples,)], 'insert')
 
   def _report_targets(self, prefix, targets, suffix):
     self.context.log.info(
@@ -429,8 +427,9 @@ class TaskBase(AbstractClass):
     if len(target_roots) == 0:
       raise TaskError('No target specified.')
     elif len(target_roots) > 1:
-      raise TaskError('Multiple targets specified: %s' %
-                      ', '.join([repr(t) for t in target_roots]))
+      raise TaskError(
+          f"Multiple targets specified: {', '.join([repr(t) for t in target_roots])}"
+      )
     return target_roots[0]
 
   def require_homogeneous_targets(self, accept_predicate, reject_predicate):

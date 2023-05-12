@@ -40,14 +40,12 @@ def indent_docstring_by_n(s, n=1):
   # Determine minimum indentation (first line doesn't count):
   indent = 999
   for line in lines[1:]:
-    stripped = line.lstrip()
-    if stripped:
+    if stripped := line.lstrip():
       indent = min(indent, len(line) - len(stripped))
   # Remove indentation (first line is special):
   trimmed = [lines[0].strip()]
   if indent < 999:
-    for line in lines[1:]:
-      trimmed.append(line[indent:].rstrip())
+    trimmed.extend(line[indent:].rstrip() for line in lines[1:])
   # Strip off trailing and leading blank lines:
   while trimmed and not trimmed[-1]:
     trimmed.pop()
@@ -176,10 +174,7 @@ def docstring_to_body(docstring):
   recording_state = True  # are we "recording" or not
   for line in docstring.splitlines():
     if line and not line[0].isspace():
-      if any(r.match(line) for r in [param_re, type_re]):
-        recording_state = False
-      else:
-        recording_state = True
+      recording_state = not any(r.match(line) for r in [param_re, type_re])
     if recording_state:
       body += line + '\n'
   return body
@@ -216,28 +211,24 @@ def shard_param_docstring(docstring):
     if line and line[0].isspace():
       param, type_or_desc = state
       shards[param][type_or_desc] += '\n' + line
-    else:  # line not indented, starting something new
-      # if a :param foo: line...
-      if param_re.match(line):
-        param_m = param_re.match(line)
-        param_name = param_m.group('param')
-        state = (param_name, 'param')
-        if not param_name in shards:
-          shards[param_name] = {}
-        if param_m.group('type'):
-          shards[param_name]['type'] = param_m.group('type')
-        shards[param_name]['param'] = param_m.group('desc')
-      # if a :type foo: line...
-      elif type_re.match(line):
-        type_m = type_re.match(line)
-        param_name = type_m.group('param')
-        state = (param_name, 'type')
-        if not param_name in shards:
-          shards[param_name] = {}
-        shards[param_name]['type'] = type_m.group('type')
-      # else, nothing that we want to "record"
-      else:
-        state = ('!forget', '!')
+    elif param_re.match(line):
+      param_m = param_re.match(line)
+      param_name = param_m.group('param')
+      state = (param_name, 'param')
+      if param_name not in shards:
+        shards[param_name] = {}
+      if param_m.group('type'):
+        shards[param_name]['type'] = param_m.group('type')
+      shards[param_name]['param'] = param_m.group('desc')
+    elif type_re.match(line):
+      type_m = type_re.match(line)
+      param_name = type_m.group('param')
+      state = (param_name, 'type')
+      if param_name not in shards:
+        shards[param_name] = {}
+      shards[param_name]['type'] = type_m.group('type')
+    else:
+      state = ('!forget', '!')
   del shards['!forget']
   return shards
 
@@ -246,10 +237,7 @@ def param_docshards_to_template_datas(funcdoc_shards):
   template_datas = []
   if funcdoc_shards:
     for param, parts in funcdoc_shards.items():
-      if 'type' in parts:
-        type_ = parts['type']
-      else:
-        type_ = None
+      type_ = parts['type'] if 'type' in parts else None
       if 'param' in parts:
         desc = rst_to_html(dedent_docstring(parts['param']))
       else:
@@ -283,12 +271,12 @@ def info_for_target_class(cls):
     args_with_no_defaults = args[1:(len(args) - len(defaults or ()))]
     for i in range(len(args_that_have_defaults)):
       arg = args_that_have_defaults[i]
-      if not arg in suppress:
+      if arg not in suppress:
         suppress.add(arg)
         args_accumulator.append(arg)
         defaults_accumulator.append(defaults[i])
     for arg in args_with_no_defaults:
-      if not arg in suppress:
+      if arg not in suppress:
         suppress.add(arg)
         args_accumulator.insert(0, arg)
     dedented_doc = dedent_docstring(c.__init__.__doc__)
@@ -361,9 +349,11 @@ def entry_for_one(nom, sym):
     return entry_for_one_class(nom, sym.im_self)
   if inspect.ismethod(sym) or inspect.isfunction(sym):
     return entry_for_one_func(nom, sym)
-  return msg_entry(nom,
-                   "TODO! no doc gen for %s %s" % (str(type(sym)), str(sym)),
-                   "TODO! no doc gen for %s %s" % (str(type(sym)), str(sym)))
+  return msg_entry(
+      nom,
+      f"TODO! no doc gen for {str(type(sym))} {str(sym)}",
+      f"TODO! no doc gen for {str(type(sym))} {str(sym)}",
+  )
 
 
 PREDEFS = {  # some hardwired entries
@@ -484,8 +474,9 @@ def gen_tasks_goals_reference_data():
     goal_dict[goal.name] = TemplateData(goal=goal, tasks=tasks)
     goal_names.append(goal.name)
 
-  goals = [goal_dict[name] for name in sorted(goal_names, key=lambda x: x.lower())]
-  return goals
+  return [
+      goal_dict[name] for name in sorted(goal_names, key=lambda x: x.lower())
+  ]
 
 
 def assemble_buildsyms(predefs=PREDEFS, build_file_parser=None):

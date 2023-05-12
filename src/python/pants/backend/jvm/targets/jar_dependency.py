@@ -96,7 +96,7 @@ class JarDependency(object):
     if ext or url or type_ or classifier:
       self.with_artifact(name=name, type_=type_, ext=ext, url=url, classifier=classifier)
 
-    self.id = "%s-%s-%s" % (self.org, self.name, self.rev)
+    self.id = f"{self.org}-{self.name}-{self.rev}"
     self._configurations = ('default',)
 
     # Support legacy method names
@@ -183,10 +183,8 @@ class JarDependency(object):
     return self
 
   def __eq__(self, other):
-    result = (self.org == other.org
-              and self.name == other.name
-              and self.rev == other.rev)
-    return result
+    return (self.org == other.org and self.name == other.name
+            and self.rev == other.rev)
 
   def __hash__(self):
     return hash((self.org, self.name, self.rev))
@@ -201,7 +199,7 @@ class JarDependency(object):
     return self.id
 
   def cache_key(self):
-    key = ''.join(str(getattr(self, key)) for key in self._HASH_KEYS)
-    key += ''.join(sorted(self._configurations))
+    key = ''.join(str(getattr(self, key)) for key in self._HASH_KEYS) + ''.join(
+        sorted(self._configurations))
     key += ''.join(a.cache_key() for a in sorted(self.artifacts, key=lambda a: a.name + a.type_))
     return key

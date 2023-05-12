@@ -47,11 +47,8 @@ class Xargs(object):
     try:
       return self._cmd(all_args)
     except OSError as e:
-      if errno.E2BIG == e.errno:
-        args1, args2 = self._split_args(all_args)
-        result = self.execute(args1)
-        if result != 0:
-          return result
-        return self.execute(args2)
-      else:
+      if errno.E2BIG != e.errno:
         raise e
+      args1, args2 = self._split_args(all_args)
+      result = self.execute(args1)
+      return result if result != 0 else self.execute(args2)

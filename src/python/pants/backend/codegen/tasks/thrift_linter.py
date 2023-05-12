@@ -77,7 +77,7 @@ class ThriftLinter(NailgunTask, JvmToolTaskMixin):
                                                  default=ThriftLinter.STRICT_DEFAULT))
 
   def lint(self, target, path):
-    self.context.log.debug('Linting %s' % path)
+    self.context.log.debug(f'Linting {path}')
 
     classpath = self.tool_classpath(self._bootstrap_key)
     config_args = self.context.config.getlist(self._CONFIG_SECTION, 'linter_args', default=[])
@@ -94,7 +94,7 @@ class ThriftLinter(NailgunTask, JvmToolTaskMixin):
                               workunit_labels=[WorkUnit.COMPILER])  # to let stdout/err through.
 
     if returncode != 0:
-      raise TaskError('Lint errors in %s.' % path)
+      raise TaskError(f'Lint errors in {path}.')
 
   def execute(self):
     thrift_targets = self.context.targets(self._is_thrift)

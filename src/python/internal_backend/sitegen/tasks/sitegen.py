@@ -142,19 +142,15 @@ def fixup_internal_links(config, soups):
   We don't preserve relative paths between files as we copy-transform them
   from source to dest. So adjust the paths to work with new locations.
   """
-  # Pages can come from different dirs; they can go to different dirs.
-  # Thus, there's some relative-path-computing here.
-  reverse_directory = {}
-  for d, s in config['sources'].items():
-    reverse_directory[s] = d
+  reverse_directory = {s: d for d, s in config['sources'].items()}
   for name, soup in soups.items():
     old_src_dir = os.path.dirname(config['sources'][name])
     for tag in soup.find_all(True):
-      if not 'href' in tag.attrs: continue
+      if 'href' not in tag.attrs: continue
       old_rel_path = tag['href'].split('#')[0]
       old_dst = os.path.normpath(os.path.join(old_src_dir, old_rel_path))
-      if not old_dst in reverse_directory: continue
-      new_dst = reverse_directory[old_dst] + '.html'
+      if old_dst not in reverse_directory: continue
+      new_dst = f'{reverse_directory[old_dst]}.html'
       new_rel_path = rel_href(name, new_dst)
       # string replace instead of assign to not loose anchor in foo.html#anchor
       tag['href'] = tag['href'].replace(old_rel_path, new_rel_path, 1)
@@ -197,7 +193,7 @@ def ensure_headings_linkable(soups):
         while True:
           count += 1
           candidate_id = 'heading_{0}_{1}'.format(snippet, count).lower()
-          if not candidate_id in existing_anchors:
+          if candidate_id not in existing_anchors:
             existing_anchors.add(candidate_id)
             tag['id'] = candidate_id
             break
@@ -238,7 +234,7 @@ def link_pantsrefs(soups, precomputed):
     for a in soup.find_all('a'):
       if a.has_attr('pantsref'):
         pantsref = a['pantsref']
-        if not pantsref in precomputed.pantsref:
+        if pantsref not in precomputed.pantsref:
           raise TaskError('Page {0} has pantsref "{1}" and I cannot find pantsmark for'
                           ' it'.format(page, pantsref))
         a['href'] = rel_href(page, precomputed.pantsref[pantsref])
@@ -261,8 +257,7 @@ def transform_soups(config, soups, precomputed):
 def get_title(soup):
   """Given a soup, pick out a title"""
   if soup.title: return soup.title.string
-  if soup.h1: return soup.h1.string
-  return ''
+  return soup.h1.string if soup.h1 else ''
 
 
 def generate_site_toc(config, precomputed, here):
@@ -272,15 +267,16 @@ def generate_site_toc(config, precomputed, here):
       if 'page' in node and node['page'] != 'index':
         dst = node['page']
         if dst == here:
-          link = here + '.html'
+          link = f'{here}.html'
         else:
-          link = os.path.relpath(dst + '.html', os.path.dirname(here))
+          link = os.path.relpath(f'{dst}.html', os.path.dirname(here))
         site_toc.append(dict(depth=depth_so_far,
                              link=link,
                              text=precomputed.page[dst].title,
                              here=(dst == here)))
       if 'children' in node:
         recurse(node['children'], depth_so_far + 1)
+
   if 'tree' in config:
     recurse(config['tree'], 0)
   return site_toc
@@ -308,9 +304,11 @@ def generate_breadcrumbs(config, precomputed, here):
       breadcrumb_pages = r
   breadcrumbs_template_data = []
   for page in breadcrumb_pages:
-    breadcrumbs_template_data.append(dict(
-        link=os.path.relpath(page + '.html', os.path.dirname(here)),
-        text=precomputed.page[page].title))
+    breadcrumbs_template_data.append(
+        dict(
+            link=os.path.relpath(f'{page}.html', os.path.dirname(here)),
+            text=precomputed.page[page].title,
+        ))
   return breadcrumbs_template_data
 
 
@@ -345,7 +343,7 @@ def generate_page_toc(soup):
     if (tag.get('id') or tag.get('name')):
       found_depth_counts[hdepth(tag)] += 1
 
-  depth_list = [i for i in range(100) if 1 < found_depth_counts[i]]
+  depth_list = [i for i in range(100) if found_depth_counts[i] > 1]
   depth_list = depth_list[:4]
   toc = []
   for tag in soup.find_all(_heading_re):
@@ -367,27 +365,25 @@ def render_html(dst, config, soups, precomputed, template):
   renderer = pystache.Renderer()
   title = precomputed.page[dst].title
   topdots = ('../' * dst.count('/'))
-  if soup.body:
-    body_html = '{0}'.format(soup.body)
-  else:
-    body_html = '{0}'.format(soup)
-  html = renderer.render(template,
-                         body_html=body_html,
-                         breadcrumbs=generate_breadcrumbs(config, precomputed, dst),
-                         generated=generate_generated(config, dst),
-                         site_toc=generate_site_toc(config, precomputed, dst),
-                         has_page_toc=bool(precomputed.page[dst].toc),
-                         page_toc=precomputed.page[dst].toc,
-                         title=title,
-                         topdots=topdots)
-  return html
+  body_html = '{0}'.format(soup.body) if soup.body else '{0}'.format(soup)
+  return renderer.render(
+      template,
+      body_html=body_html,
+      breadcrumbs=generate_breadcrumbs(config, precomputed, dst),
+      generated=generate_generated(config, dst),
+      site_toc=generate_site_toc(config, precomputed, dst),
+      has_page_toc=bool(precomputed.page[dst].toc),
+      page_toc=precomputed.page[dst].toc,
+      title=title,
+      topdots=topdots,
+  )
 
 
 def write_en_pages(config, soups, precomputed, template):
   outdir = config['outdir']
   for dst in soups:
     html = render_html(dst, config, soups, precomputed, template)
-    dst_path = os.path.join(outdir, dst + '.html')
+    dst_path = os.path.join(outdir, f'{dst}.html')
     dst_dir = os.path.dirname(dst_path)
     if not os.path.isdir(dst_dir):
       os.makedirs(dst_dir)

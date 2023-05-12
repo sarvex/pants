@@ -43,7 +43,7 @@ class PythonBinaryCreate(PythonTask):
 
     run_info = self.context.run_tracker.run_info
     build_properties = {}
-    build_properties.update(run_info.add_basic_info(run_id=None, timestamp=time.time()))
+    build_properties |= run_info.add_basic_info(run_id=None, timestamp=time.time())
     build_properties.update(run_info.add_scm_info())
 
     pexinfo = binary.pexinfo.copy()
@@ -57,6 +57,6 @@ class PythonBinaryCreate(PythonTask):
         interpreter=interpreter,
         conn_timeout=self.conn_timeout)
 
-      pex_path = os.path.join(self._distdir, '%s.pex' % binary.name)
+      pex_path = os.path.join(self._distdir, f'{binary.name}.pex')
       chroot.dump()
       builder.build(pex_path)

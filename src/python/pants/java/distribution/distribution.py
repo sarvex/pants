@@ -67,8 +67,7 @@ class Distribution(object):
       yield home_bin_path('JAVA_HOME')
       path = os.environ.get('PATH')
       if path:
-        for p in path.strip().split(os.pathsep):
-          yield p
+        yield from path.strip().split(os.pathsep)
 
     for path in filter(None, search_path()):
       try:
@@ -80,8 +79,9 @@ class Distribution(object):
       except (ValueError, cls.Error):
         pass
 
-    raise cls.Error('Failed to locate a %s distribution with minimum_version %s, maximum_version %s'
-                    % ('JDK' if jdk else 'JRE', minimum_version, maximum_version))
+    raise cls.Error(
+        f"Failed to locate a {'JDK' if jdk else 'JRE'} distribution with minimum_version {minimum_version}, maximum_version {maximum_version}"
+    )
 
   @staticmethod
   def _parse_java_version(name, version):
@@ -93,7 +93,8 @@ class Distribution(object):
     if isinstance(version, Compatibility.string):
       version = Revision.semver(version.replace('_', '-'))
     if version and not isinstance(version, Revision):
-      raise ValueError('%s must be a string or a Revision object, given: %s' % (name, version))
+      raise ValueError(
+          f'{name} must be a string or a Revision object, given: {version}')
     return version
 
   @staticmethod
@@ -110,7 +111,7 @@ class Distribution(object):
     """
 
     if not os.path.isdir(bin_path):
-      raise ValueError('The specified distribution path is invalid: %s' % bin_path)
+      raise ValueError(f'The specified distribution path is invalid: {bin_path}')
     self._bin_path = bin_path
 
     self._minimum_version = self._parse_java_version("minimum_version", minimum_version)
@@ -171,7 +172,8 @@ class Distribution(object):
     If this distribution has no valid command of the given name raises Distribution.Error.
     """
     if not isinstance(name, Compatibility.string):
-      raise ValueError('name must be a binary name, given %s of type %s' % (name, type(name)))
+      raise ValueError(
+          f'name must be a binary name, given {name} of type {type(name)}')
     self.validate()
     return self._validated_executable(name)
 

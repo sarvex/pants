@@ -26,12 +26,14 @@ from pants.base.validation import assert_list
 class JarRule(AbstractClass):
   def __init__(self, apply_pattern):
     if not isinstance(apply_pattern, Compatibility.string):
-      raise ValueError('The supplied apply_pattern is not a string, given: %s' % apply_pattern)
+      raise ValueError(
+          f'The supplied apply_pattern is not a string, given: {apply_pattern}')
     try:
       self._apply_pattern = re.compile(apply_pattern)
     except re.error as e:
-      raise ValueError('The supplied apply_pattern - %s - is not a valid regular expression: %s'
-                       % (apply_pattern, e))
+      raise ValueError(
+          f'The supplied apply_pattern - {apply_pattern} - is not a valid regular expression: {e}'
+      )
 
   @property
   def apply_pattern(self):
@@ -54,7 +56,8 @@ class Duplicate(JarRule):
       :param str path: The path of the duplicate entry.
       """
       assert path and isinstance(path, Compatibility.string), 'A non-empty path must be supplied.'
-      super(Duplicate.Error, self).__init__('Duplicate entry encountered for path %s' % path)
+      super(Duplicate.Error,
+            self).__init__(f'Duplicate entry encountered for path {path}')
       self._path = path
 
     @property
@@ -86,8 +89,9 @@ class Duplicate(JarRule):
     :raises: ``ValueError`` if the action is invalid.
     """
     if action not in cls._VALID_ACTIONS:
-      raise ValueError('The supplied action must be one of %s, given: %s'
-                       % (cls._VALID_ACTIONS, action))
+      raise ValueError(
+          f'The supplied action must be one of {cls._VALID_ACTIONS}, given: {action}'
+      )
     return action
 
   def __init__(self, apply_pattern, action):
@@ -273,7 +277,7 @@ class RelativeToMapper(object):
     return os.path.relpath(file, self.base)
 
   def __repr__(self):
-    return 'IdentityMapper(%s)' % self.base
+    return f'IdentityMapper({self.base})'
 
   def __hash__(self):
     return hash(self.base)
@@ -357,7 +361,7 @@ class Bundle(object):
     if relative_to:
       base = os.path.join(get_buildroot(), self._rel_path, relative_to)
       if not os.path.isdir(os.path.join(get_buildroot(), base)):
-        raise ValueError('Could not find a directory to bundle relative to at %s' % base)
+        raise ValueError(f'Could not find a directory to bundle relative to at {base}')
       self.mapper = RelativeToMapper(base)
     else:
       self.mapper = mapper or RelativeToMapper(os.path.join(get_buildroot(), self._rel_path))
@@ -369,20 +373,21 @@ class Bundle(object):
     """
     for fileset in filesets:
       paths = fileset() if isinstance(fileset, Fileset) \
-                        else fileset if hasattr(fileset, '__iter__') \
-                        else [fileset]
+                          else fileset if hasattr(fileset, '__iter__') \
+                          else [fileset]
       for path in paths:
         abspath = path
         if not os.path.isabs(abspath):
           abspath = os.path.join(get_buildroot(), self._rel_path, path)
         if not os.path.exists(abspath):
-          raise ValueError('Given path: %s with absolute path: %s which does not exist'
-                           % (path, abspath))
+          raise ValueError(
+              f'Given path: {path} with absolute path: {abspath} which does not exist'
+          )
         self.filemap[abspath] = self.mapper(abspath)
     return self
 
   def __repr__(self):
-    return 'Bundle(%s, %s)' % (self.mapper, self.filemap)
+    return f'Bundle({self.mapper}, {self.filemap})'
 
 
 class JvmApp(Target):

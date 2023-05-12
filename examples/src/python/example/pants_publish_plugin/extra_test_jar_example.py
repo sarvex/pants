@@ -35,8 +35,8 @@ class ExtraTestJarExample(JarTask):
     # For each node in the graph that was selected below, create a jar, and store a reference to
     # the jar in the product map.
     def process(target):
-      self.context.log.info("Processing target %s" % target)
-      jar_name = "%s.%s-extra_example.jar" % (target.provides.org, target.provides.name)
+      self.context.log.info(f"Processing target {target}")
+      jar_name = f"{target.provides.org}.{target.provides.name}-extra_example.jar"
       # This is the path in .pants.d to write our new additional jar to. Note that we won't publish
       # directly from this location.
       jar_path = os.path.join(self.workdir, jar_name)
@@ -59,7 +59,7 @@ class ExtraTestJarExample(JarTask):
       # IMPORTANT: this string *must* match the string that you have set in pants.ini. Otherwise,
       # the code in 'jar_publish.py' won't be able to find this addition to the product map.
       self.context.products.get('extra_test_jar_example').add(target, self.workdir).append(jar_name)
-      self.context.log.info("Made a jar: %s" % jar_path)
+      self.context.log.info(f"Made a jar: {jar_path}")
 
     # Loop over all of the targets in the graph, and select the ones that we wish to operate on.
     # This example selects all JavaLibrary targets, but different criteria can be specified below.

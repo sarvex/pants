@@ -178,7 +178,10 @@ class PythonTestBuilderTest(PythonTestBuilderTestBase):
       self.assertEqual(0, int(root.getAttribute('errors')))
       self.assertEqual(0, int(root.getAttribute('skips')))
 
-      children_by_test_name = dict((elem.getAttribute('name'), elem) for elem in root.childNodes)
+      children_by_test_name = {
+          elem.getAttribute('name'): elem
+          for elem in root.childNodes
+      }
       self.assertEqual(0, len(children_by_test_name['test_one'].childNodes))
       self.assertEqual(1, len(children_by_test_name['test_two'].childNodes))
       self.assertEqual('failure', children_by_test_name['test_two'].firstChild.nodeName)

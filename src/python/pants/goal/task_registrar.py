@@ -54,7 +54,7 @@ class TaskRegistrar(object):
       self._task = FuncTask
 
   def __repr__(self):
-    return "TaskRegistrar(%s; %s)" % (self.name, ','.join(map(str, self.dependencies)))
+    return f"TaskRegistrar({self.name}; {','.join(map(str, self.dependencies))})"
 
   @property
   def task_type(self):

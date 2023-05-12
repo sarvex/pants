@@ -69,7 +69,10 @@ class PythonTask(Task):
 
     if not allowed_interpreters:
       # Create a helpful error message.
-      unique_compatibilities = set(tuple(t.compatibility) for t in targets_with_compatibilities)
+      unique_compatibilities = {
+          tuple(t.compatibility)
+          for t in targets_with_compatibilities
+      }
       unique_compatibilities_strs = [','.join(x) for x in unique_compatibilities if x]
       targets_with_compatibilities_strs = [str(t) for t in targets_with_compatibilities]
       raise TaskError('Unable to detect a suitable interpreter for compatibilities: %s '
@@ -86,7 +89,7 @@ class PythonTask(Task):
     if len(interpreters) != 1:
       raise TaskError('Unable to detect a suitable interpreter.')
     interpreter = interpreters[0]
-    self.context.log.debug('Selected %s' % interpreter)
+    self.context.log.debug(f'Selected {interpreter}')
     return interpreter
 
   @contextmanager

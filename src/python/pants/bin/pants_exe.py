@@ -64,8 +64,10 @@ def _find_all_commands():
 def _add_default_options(command, args):
   expanded_options = RcFile(paths=['/etc/pantsrc', '~/.pants.rc']).apply_defaults([command], args)
   if expanded_options != args:
-    print("(using ~/.pantsrc expansion: pants %s %s)" % (command, ' '.join(expanded_options)),
-          file=sys.stderr)
+    print(
+        f"(using ~/.pantsrc expansion: pants {command} {' '.join(expanded_options)})",
+        file=sys.stderr,
+    )
   return expanded_options
 
 
@@ -77,7 +79,7 @@ def _synthesize_command(root_dir, args):
     return command, _add_default_options(command, subcommand_args)
 
   if command.startswith('-'):
-    _exit_and_fail('Invalid command: %s' % command)
+    _exit_and_fail(f'Invalid command: {command}')
 
   _exit_and_fail('Pants build missing a command: args={args} tb=\n{tb}'
                  .format(args=args, tb=traceback.format_exc()))
@@ -104,14 +106,11 @@ def _run():
 
   root_dir = get_buildroot()
   if not os.path.exists(root_dir):
-    _exit_and_fail('PANTS_BUILD_ROOT does not point to a valid path: %s' % root_dir)
+    _exit_and_fail(f'PANTS_BUILD_ROOT does not point to a valid path: {root_dir}')
 
-  if len(sys.argv) < 2:
-    argv = ['goal']
-  else:
-    argv = sys.argv[1:]
+  argv = ['goal'] if len(sys.argv) < 2 else sys.argv[1:]
   # Hack to force ./pants -h etc. to redirect to goal.
-  if argv[0] != 'goal' and set(['-h', '--help', 'help']).intersection(argv):
+  if argv[0] != 'goal' and {'-h', '--help', 'help'}.intersection(argv):
     argv = ['goal'] + argv
 
   parser = optparse.OptionParser(add_help_option=False, version=version)
@@ -128,9 +127,8 @@ def _run():
   report = initial_reporting(config, run_tracker)
   run_tracker.start(report)
 
-  url = run_tracker.run_info.get_info('report_url')
-  if url:
-    run_tracker.log(Report.INFO, 'See a report at: %s' % url)
+  if url := run_tracker.run_info.get_info('report_url'):
+    run_tracker.log(Report.INFO, f'See a report at: {url}')
   else:
     run_tracker.log(Report.INFO, '(To run a reporting server: ./pants goal server)')
 
@@ -151,17 +149,16 @@ def _run():
                           address_mapper,
                           build_graph)
   try:
-    try:
-      result = command.run()
-      if result:
-        run_tracker.set_root_outcome(WorkUnit.FAILURE)
-      _do_exit(result)
-    except KeyboardInterrupt:
-      command.cleanup()
-      raise
-    except Exception:
+    result = command.run()
+    if result:
       run_tracker.set_root_outcome(WorkUnit.FAILURE)
-      raise
+    _do_exit(result)
+  except KeyboardInterrupt:
+    command.cleanup()
+    raise
+  except Exception:
+    run_tracker.set_root_outcome(WorkUnit.FAILURE)
+    raise
   finally:
     run_tracker.end()
     # Must kill nailguns only after run_tracker.end() is called, because there may still

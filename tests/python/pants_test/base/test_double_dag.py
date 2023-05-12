@@ -32,8 +32,8 @@ class DoubleDagTest(BaseTest):
     e = self.make_target('e', dependencies=[d])
 
     def test_dag(dag):
-      self.assertEquals(dag._roots, set([dag.lookup(e)]))
-      self.assertEquals(dag.leaves, set([dag.lookup(a)]))
+      self.assertEquals(dag._roots, {dag.lookup(e)})
+      self.assertEquals(dag.leaves, {dag.lookup(a)})
 
       self.check_dag_node(dag, e, [d], [])
       self.check_dag_node(dag, d, [a, c], [e])
@@ -72,7 +72,7 @@ class DoubleDagTest(BaseTest):
       def t(n):
         return dag.lookup(n)
 
-      self.assertEquals(dag._roots, set([t(root)]))
+      self.assertEquals(dag._roots, {t(root)})
       self.assertEquals(dag.leaves, set(map(t, [rrr, rrl, rlr, rll, lrr, lrl, llr, lll])))
 
       self.check_dag_node(dag, root, [r, l], [])
@@ -110,8 +110,8 @@ class DoubleDagTest(BaseTest):
     d = self.make_target('d', dependencies=[c, b])
 
     def test_diamond_dag(dag):
-      self.assertEquals(dag._roots, set([dag.lookup(d)]))
-      self.assertEquals(dag.leaves, set([dag.lookup(a)]))
+      self.assertEquals(dag._roots, {dag.lookup(d)})
+      self.assertEquals(dag.leaves, {dag.lookup(a)})
       self.check_dag_node(dag, d, [b, c], [])
       self.check_dag_node(dag, c, [a], [d])
       self.check_dag_node(dag, b, [a], [d])

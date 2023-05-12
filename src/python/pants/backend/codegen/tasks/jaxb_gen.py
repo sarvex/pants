@@ -59,7 +59,7 @@ class JaxbGen(CodeGen, NailgunTask):
 
   def genlang(self, lang, targets):
     if lang != 'java':
-      raise TaskError('Unrecognized jaxb language: %s' % lang)
+      raise TaskError(f'Unrecognized jaxb language: {lang}')
     output_dir = os.path.join(self.workdir, 'gen-java')
     safe_mkdir(output_dir)
     cache = []
@@ -96,7 +96,7 @@ class JaxbGen(CodeGen, NailgunTask):
   def createtarget(self, lang, gentarget, dependees):
     predicates = self.genlangs()
     languages = predicates.keys()
-    if not (lang in languages) or not (predicates[lang](gentarget)):
+    if lang not in languages or not (predicates[lang](gentarget)):
       raise TaskError('Invalid language "{lang}" for task {task}'
                       .format(lang=lang, task=type(self).__name__))
 
@@ -122,7 +122,7 @@ class JaxbGen(CodeGen, NailgunTask):
     return target
 
   @classmethod
-  def _guess_package(self, path):
+  def _guess_package(cls, path):
     """Used in genlang to actually invoke the compiler with the proper arguments, and in
     createtarget (via _sources_to_be_generated) to declare what the generated files will be.
 
@@ -139,16 +139,16 @@ class JaxbGen(CodeGen, NailgunTask):
     return package
 
   @classmethod
-  def _correct_package(self, package):
+  def _correct_package(cls, package):
     package = package.replace('/', '.')
     package = re.sub(r'^\.+', '', package)
     package = re.sub(r'\.+$', '', package)
     if re.search(r'\.{2,}', package) is not None:
-      raise ValueError('Package name cannot have consecutive periods! (%s)' % package)
+      raise ValueError(f'Package name cannot have consecutive periods! ({package})')
     return package
 
   @classmethod
-  def _sources_to_be_generated(self, package, path):
+  def _sources_to_be_generated(cls, package, path):
     """This method (or some variation of it) seems to be common amongst all implementations of
     code-generating tasks.
 
@@ -161,8 +161,8 @@ class JaxbGen(CodeGen, NailgunTask):
     """
     doc = parse(path)
     if package is None:
-      package = self._guess_package(path)
-    package = self._correct_package(package)
+      package = cls._guess_package(path)
+    package = cls._correct_package(package)
 
     names = []
     for root in doc.childNodes:
@@ -172,9 +172,9 @@ class JaxbGen(CodeGen, NailgunTask):
             name = element.attributes['name'].nodeValue
             if len(name) == 0: continue
             # enforce pascal-case class names
-            name = name[0:1].upper() + name[1:]
+            name = name[:1].upper() + name[1:]
             names.append(name)
 
     names.append('ObjectFactory')
     outdir = package.replace('.', '/')
-    return [os.path.join(outdir, '%s.java' % name) for name in names]
+    return [os.path.join(outdir, f'{name}.java') for name in names]

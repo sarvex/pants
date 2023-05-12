@@ -73,7 +73,7 @@ class RcFile(object):
       log.debug('no rcfile found')
       return args
 
-    log.debug('using rcfiles: %s to modify args' % ','.join(read_from))
+    log.debug(f"using rcfiles: {','.join(read_from)} to modify args")
 
     def get_rcopts(command, key):
       return safe_shlex_split(config.get(command, key)) if config.has_option(command, key) else []

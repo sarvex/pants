@@ -34,8 +34,8 @@ class ScalaRepl(JvmTask, JvmToolTaskMixin):
 
   def execute(self):
     (accept_predicate, reject_predicate) = Target.lang_discriminator('java')
-    targets = self.require_homogeneous_targets(accept_predicate, reject_predicate)
-    if targets:
+    if targets := self.require_homogeneous_targets(accept_predicate,
+                                                   reject_predicate):
       tools_classpath = self.tool_classpath(self._bootstrap_key)
       self.context.release_lock()
       with preserve_stty_settings():

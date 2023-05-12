@@ -20,8 +20,9 @@ class PathFinder(ConsoleTask):
 
   @classmethod
   def _find_paths(cls, from_target, to_target, log):
-    log.debug('Looking for all paths from %s to %s' % (from_target.address.reference(),
-                                                       to_target.address.reference()))
+    log.debug(
+        f'Looking for all paths from {from_target.address.reference()} to {to_target.address.reference()}'
+    )
 
     paths = cls._find_paths_rec(from_target, to_target)
     print('Found %d paths' % len(paths))
@@ -51,14 +52,16 @@ class PathFinder(ConsoleTask):
 
   @classmethod
   def _find_path(cls, from_target, to_target, log):
-    log.debug('Looking for path from %s to %s' % (from_target.address.reference(),
-                                                  to_target.address.reference()))
+    log.debug(
+        f'Looking for path from {from_target.address.reference()} to {to_target.address.reference()}'
+    )
 
     queue = [([from_target], 0)]
     while True:
       if not queue:
-        print('no path found from %s to %s!' % (from_target.address.reference(),
-                                                to_target.address.reference()))
+        print(
+            f'no path found from {from_target.address.reference()} to {to_target.address.reference()}!'
+        )
         break
 
       path, indent = queue.pop(0)
@@ -67,16 +70,15 @@ class PathFinder(ConsoleTask):
         continue
       cls.examined_targets.add(next_target)
 
-      log.debug('%sexamining %s' % ('  ' * indent, next_target))
+      log.debug(f"{'  ' * indent}examining {next_target}")
 
       if next_target == to_target:
         print('')
         for target in path:
-          print('%s' % target.address.reference())
+          print(f'{target.address.reference()}')
         break
 
-      for dep in next_target.dependencies:
-        queue.append((path + [dep], indent + 1))
+      queue.extend((path + [dep], indent + 1) for dep in next_target.dependencies)
 
 
 class Path(PathFinder):

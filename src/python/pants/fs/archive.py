@@ -50,7 +50,7 @@ class TarArchiver(Archiver):
 
   def create(self, basedir, outdir, name, prefix=None):
     basedir = ensure_text(basedir)
-    tarpath = os.path.join(outdir, '%s.%s' % (ensure_text(name), self.extension))
+    tarpath = os.path.join(outdir, f'{ensure_text(name)}.{self.extension}')
     with open_tar(tarpath, self.mode, dereference=True, errorlevel=1) as tar:
       tar.add(basedir, arcname=prefix or '.')
     return tarpath
@@ -73,18 +73,17 @@ class ZipArchiver(Archiver):
       for path in zip.namelist():
         # While we're at it, we also perform this safety test.
         if path.startswith(b'/') or path.startswith(b'..'):
-          raise ValueError('Zip file contains unsafe path: %s' % path)
+          raise ValueError(f'Zip file contains unsafe path: {path}')
         # Ignore directories. extract() will create parent dirs as needed.
-        if not path.endswith(b'/'):
-          if (not filter or filter(path)):
-            zip.extract(path, outdir)
+        if not path.endswith(b'/') and (not filter or filter(path)):
+          zip.extract(path, outdir)
 
   def __init__(self, compression):
     Archiver.__init__(self)
     self.compression = compression
 
   def create(self, basedir, outdir, name, prefix=None):
-    zippath = os.path.join(outdir, '%s.zip' % name)
+    zippath = os.path.join(outdir, f'{name}.zip')
     with open_zip(zippath, 'w', compression=ZIP_DEFLATED) as zip:
       for root, _, files in safe_walk(basedir):
         root = ensure_text(root)
@@ -117,7 +116,7 @@ def archiver(typename):
   'tbz2'  Returns a tar archiver that applies bzip2 compression and emits .tar.bz2 files.
   'zip'   Returns a zip archiver that applies standard compression and emits .zip files.
   """
-  archiver = _ARCHIVER_BY_TYPE.get(typename)
-  if not archiver:
+  if archiver := _ARCHIVER_BY_TYPE.get(typename):
+    return archiver
+  else:
     raise ValueError('No archiver registered for %r' % typename)
-  return archiver

@@ -186,7 +186,7 @@ class Config(object):
     """
     val = self.get(section, option, type=type)
     if val is None:
-      raise Config.ConfigError('Required option %s.%s is not defined.' % (section, option))
+      raise Config.ConfigError(f'Required option {section}.{option} is not defined.')
     return val
 
   def has_section(self, section):
@@ -219,7 +219,7 @@ class Config(object):
         type.__name__, section, option, raw_value, e))
 
     if not isinstance(parsed_value, type):
-      raise Config.ConfigError('No valid %s for %s.%s: %s' % (
-        type.__name__, section, option, raw_value))
+      raise Config.ConfigError(
+          f'No valid {type.__name__} for {section}.{option}: {raw_value}')
 
     return parsed_value

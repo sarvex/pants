@@ -33,20 +33,19 @@ def safe_filename(name, extension=None, digest=None, max_length=_MAX_FILENAME_LE
   max_length: the maximum desired file name length
   """
   if os.path.basename(name) != name:
-    raise ValueError('Name must be a filename, handed a path: %s' % name)
+    raise ValueError(f'Name must be a filename, handed a path: {name}')
 
   ext = extension or ''
   filename = name + ext
   if len(filename) <= max_length:
     return filename
-  else:
-    digest = digest or hashlib.sha1()
-    digest.update(name)
-    safe_name = digest.hexdigest() + ext
-    if len(safe_name) > max_length:
-      raise ValueError('Digest %s failed to produce a filename <= %d '
-                       'characters for %s - got %s' % (digest, max_length, filename, safe_name))
-    return safe_name
+  digest = digest or hashlib.sha1()
+  digest.update(name)
+  safe_name = digest.hexdigest() + ext
+  if len(safe_name) > max_length:
+    raise ValueError('Digest %s failed to produce a filename <= %d '
+                     'characters for %s - got %s' % (digest, max_length, filename, safe_name))
+  return safe_name
 
 
 def expand_path(path):

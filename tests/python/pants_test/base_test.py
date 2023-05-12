@@ -215,7 +215,9 @@ class BaseTest(unittest.TestCase):
     """
     if sources:
       self.create_files(path, sources)
-    self.add_to_build_file(path, dedent('''
+    self.add_to_build_file(
+        path,
+        dedent(('''
           %(target_type)s(name='%(name)s',
             %(sources)s
             %(resources)s
@@ -223,22 +225,24 @@ class BaseTest(unittest.TestCase):
             %(provides)s
             %(dependencies)s
           )
-        ''' % dict(target_type=target_type,
-                   name=name,
-                   sources=('sources=%s,' % repr(sources)
-                              if sources else ''),
-                   resources=('resources=["%s"],' % kwargs.get('resources')
-                              if 'resources' in kwargs else ''),
-                   java_sources=('java_sources=[%s],'
-                                 % ','.join(map(lambda str_target: '"%s"' % str_target,
-                                                kwargs.get('java_sources')))
-                                 if 'java_sources' in kwargs else ''),
-                   provides=('provides=%s,' % kwargs.get('provides')
-                              if 'provides' in kwargs else ''),
-                   dependencies=('dependencies=%s,' % kwargs.get('dependencies')
-                              if 'dependencies' in kwargs else ''),
-                   )))
-    return self.target('%s:%s' % (path, name))
+        ''' % dict(
+            target_type=target_type,
+            name=name,
+            sources=f'sources={repr(sources)},' if sources else '',
+            resources=f"""resources=["{kwargs.get('resources')}"],"""
+            if 'resources' in kwargs else '',
+            java_sources=('java_sources=[%s],' % ','.join(
+                map(
+                    lambda str_target: f'"{str_target}"',
+                    kwargs.get('java_sources'),
+                ))) if 'java_sources' in kwargs else '',
+            provides=f"provides={kwargs.get('provides')},"
+            if 'provides' in kwargs else '',
+            dependencies=f"dependencies={kwargs.get('dependencies')},"
+            if 'dependencies' in kwargs else '',
+        ))),
+    )
+    return self.target(f'{path}:{name}')
 
   def create_resources(self, path, name, *sources):
     return self.create_library(path, 'resources', name, sources)

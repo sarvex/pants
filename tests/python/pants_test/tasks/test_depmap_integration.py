@@ -27,16 +27,17 @@ class DepmapIntegrationTest(PantsRunIntegrationTest):
                       msg='Could not find depmap output file in {out_file}'
                         .format(out_file=depmap_out_file))
     with open(depmap_out_file) as json_file:
-      json_data = json.load(json_file)
-      return json_data
+      return json.load(json_file)
 
   def test_depmap_code_gen(self):
     with temporary_dir(root_dir=self.workdir_root()) as workdir:
       test_target = 'examples/tests/java/com/pants/examples/usethrift:usethrift'
       json_data = self.run_depmap_project_info(test_target, workdir)
       thrift_target_name = 'examples.src.thrift.com.pants.examples.precipitation.precipitation-java'
-      codegen_target = os.path.join(os.path.relpath(workdir, get_buildroot()),
-                                  'gen/thrift/combined/gen-java:%s' % thrift_target_name)
+      codegen_target = os.path.join(
+          os.path.relpath(workdir, get_buildroot()),
+          f'gen/thrift/combined/gen-java:{thrift_target_name}',
+      )
       self.assertTrue(codegen_target in json_data.get('targets'))
 
   def test_depmap_json_transitive_jar(self):

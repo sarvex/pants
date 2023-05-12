@@ -50,7 +50,7 @@ def _resolve_interpreter(config, interpreter, requirement, logger=print):
   if egg:
     return interpreter.with_extra(egg.name, egg.raw_version, egg.url)
   else:
-    logger('Failed to resolve requirement %s for %s' % (requirement, interpreter))
+    logger(f'Failed to resolve requirement {requirement} for {interpreter}')
 
 
 def _resolve_and_link(config, requirement, target_link, installer_provider, logger=print):
@@ -64,15 +64,15 @@ def _resolve_and_link(config, requirement, target_link, installer_provider, logg
   obtainer_iterator = obtainer.iter(requirement)
   links = [link for link in obtainer_iterator if isinstance(link, SourcePackage)]
   for link in links:
-    logger('    fetching %s' % link.url)
+    logger(f'    fetching {link.url}')
     sdist = link.fetch()
-    logger('    installing %s' % sdist)
+    logger(f'    installing {sdist}')
     installer = installer_provider(sdist)
     dist_location = installer.bdist()
     target_location = os.path.join(os.path.dirname(target_link), os.path.basename(dist_location))
     shutil.move(dist_location, target_location)
     _safe_link(target_location, target_link)
-    logger('    installed %s' % target_location)
+    logger(f'    installed {target_location}')
     return EggPackage(target_location)
 
 
@@ -97,8 +97,10 @@ def _resolve(config, interpreter, logger=print):
   wheel_requirement = _failsafe_parse(
       'wheel==%s' % config.get('python-setup', 'wheel_version', default='0.23.0'))
 
-  interpreter = _resolve_interpreter(config, interpreter, setuptools_requirement, logger=logger)
-  if interpreter:
+  if interpreter := _resolve_interpreter(config,
+                                         interpreter,
+                                         setuptools_requirement,
+                                         logger=logger):
     return _resolve_interpreter(config, interpreter, wheel_requirement, logger=logger)
 
 
@@ -164,9 +166,8 @@ class PythonInterpreterCache(object):
   def _setup_cached(self, filters):
     for interpreter_dir in os.listdir(self._path):
       path = os.path.join(self._path, interpreter_dir)
-      pi = self._interpreter_from_path(path, filters)
-      if pi:
-        self._logger('Detected interpreter %s: %s' % (pi.binary, str(pi.identity)))
+      if pi := self._interpreter_from_path(path, filters):
+        self._logger(f'Detected interpreter {pi.binary}: {str(pi.identity)}')
         self._interpreters.add(pi)
 
   def _setup_paths(self, paths, filters):
@@ -177,8 +178,8 @@ class PythonInterpreterCache(object):
       if pi is None:
         self._setup_interpreter(interpreter)
         pi = self._interpreter_from_path(path, filters)
-        if pi is None:
-          continue
+      if pi is None:
+        continue
       self._interpreters.add(pi)
 
   def matches(self, filters):
@@ -188,8 +189,7 @@ class PythonInterpreterCache(object):
       cache, using the Requirement-style format, e.g. ``'CPython>=3', or just ['>=2.7','<3']``
       for requirements agnostic to interpreter class.
     """
-    for match in self._matching(self._interpreters, filters):
-      yield match
+    yield from self._matching(self._interpreters, filters)
 
   def setup(self, paths=(), force=False, filters=(b'',)):
     """Sets up a cache of python interpreters.
@@ -210,9 +210,9 @@ class PythonInterpreterCache(object):
       has_setup = True
       self._setup_paths(setup_paths, filters)
     matches = list(self.matches(filters))
-    if len(matches) == 0 and not has_setup:
+    if not matches and not has_setup:
       self._setup_paths(setup_paths, filters)
       matches = list(self.matches(filters))
-    if len(matches) == 0:
+    if not matches:
       self._logger('Found no valid interpreters!')
     return matches

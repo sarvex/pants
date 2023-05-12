@@ -33,19 +33,19 @@ class Netrc(object):
     return self._password[repository]
 
   def _ensure_loaded(self):
-    if not self._login and not self._password:
-      db = os.path.expanduser('~/.netrc')
-      if not os.path.exists(db):
-        raise self.NetrcError('A ~/.netrc file is required to authenticate')
-      try:
-        db = NetrcDb(db)
-        for host, value in db.hosts.items():
-          auth = db.authenticators(host)
-          if auth:
-            login, _, password = auth
-            self._login[host] = login
-            self._password[host] = password
-        if len(self._login) == 0:
-          raise self.NetrcError('Found no usable authentication blocks in ~/.netrc')
-      except NetrcParseError as e:
-        raise self.NetrcError('Problem parsing ~/.netrc: %s' % e)
+    if self._login or self._password:
+      return
+    db = os.path.expanduser('~/.netrc')
+    if not os.path.exists(db):
+      raise self.NetrcError('A ~/.netrc file is required to authenticate')
+    try:
+      db = NetrcDb(db)
+      for host, value in db.hosts.items():
+        if auth := db.authenticators(host):
+          login, _, password = auth
+          self._login[host] = login
+          self._password[host] = password
+      if len(self._login) == 0:
+        raise self.NetrcError('Found no usable authentication blocks in ~/.netrc')
+    except NetrcParseError as e:
+      raise self.NetrcError(f'Problem parsing ~/.netrc: {e}')

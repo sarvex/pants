@@ -94,7 +94,7 @@ class WorkerPool(object):
 
     def error(e):
       done()
-      self._run_tracker.log(Report.ERROR, '%s' % e)
+      self._run_tracker.log(Report.ERROR, f'{e}')
 
     # We filter out Nones defensively. There shouldn't be any, but if a bug causes one,
     # Pants might hang indefinitely without this filtering.
@@ -110,9 +110,9 @@ class WorkerPool(object):
       self._pending_workchains += 1
     try:
       submit_next()
-    except Exception as e:  # Handles errors in the submission code.
+    except Exception as e:# Handles errors in the submission code.
       done()
-      self._run_tracker.log(Report.ERROR, '%s' % e)
+      self._run_tracker.log(Report.ERROR, f'{e}')
       raise
 
   def submit_work_and_wait(self, work, workunit_parent=None):
@@ -123,15 +123,15 @@ class WorkerPool(object):
 
     Returns a list of return values of each invocation, in order.  Throws if any invocation does.
     """
-    if work is None or len(work.args_tuples) == 0:  # map hangs on 0-length iterables.
+    if work is None or len(work.args_tuples) == 0:
       return []
-    else:
-      def do_work(*args):
-        return self._do_work(work.func, *args, workunit_name=work.workunit_name,
-                             workunit_parent=workunit_parent)
-      # We need to specify a timeout explicitly, because otherwise python ignores SIGINT when waiting
-      # on a condition variable, so we won't be able to ctrl-c out.
-      return self._pool.map_async(do_work, work.args_tuples, chunksize=1).get(timeout=1000000000)
+    def do_work(*args):
+      return self._do_work(work.func, *args, workunit_name=work.workunit_name,
+                           workunit_parent=workunit_parent)
+
+    # We need to specify a timeout explicitly, because otherwise python ignores SIGINT when waiting
+    # on a condition variable, so we won't be able to ctrl-c out.
+    return self._pool.map_async(do_work, work.args_tuples, chunksize=1).get(timeout=1000000000)
 
   def _do_work(self, func, args_tuple, workunit_name, workunit_parent, on_failure=None):
     try:

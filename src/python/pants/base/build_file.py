@@ -56,10 +56,11 @@ class BuildFile(object):
   @staticmethod
   def _get_all_build_files(path):
     """Returns all the BUILD files on a path"""
-    results = []
-    for build in glob1(path, '{prefix}*'.format(prefix=BuildFile._BUILD_FILE_PREFIX)):
-      if BuildFile._is_buildfile_name(build):
-        results.append(build)
+    results = [
+        build for build in glob1(
+            path, '{prefix}*'.format(prefix=BuildFile._BUILD_FILE_PREFIX))
+        if BuildFile._is_buildfile_name(build)
+    ]
     return sorted(results)
 
   @staticmethod
@@ -227,8 +228,7 @@ class BuildFile(object):
     file if it exists and sibling build files each with their own extension, eg: BUILD.extras."""
 
     yield self
-    for sibling in self.siblings():
-      yield sibling
+    yield from self.siblings()
 
   def code(self):
     """Returns the code object for this BUILD file."""
@@ -249,10 +249,8 @@ class BuildFile(object):
       return code
 
   def __eq__(self, other):
-    result = other and (
-      type(other) == BuildFile) and (
-      self.full_path == other.full_path)
-    return result
+    return (other and (type(other) == BuildFile)
+            and (self.full_path == other.full_path))
 
   def __hash__(self):
     return hash(self.full_path)

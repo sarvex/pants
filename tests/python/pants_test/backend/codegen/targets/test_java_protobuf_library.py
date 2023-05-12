@@ -34,7 +34,7 @@ class JavaProtobufLibraryTest(BaseTest):
     target = self.build_graph.get_target(SyntheticAddress.parse('//:foo'))
     self.assertIsInstance(target, JavaProtobufLibrary)
     self.assertSequenceEqual([], target.imports)
-    traversable_specs = [seq for seq in target.traversable_specs]
+    traversable_specs = list(target.traversable_specs)
     self.assertSequenceEqual([], traversable_specs)
 
   def test_jar_library_imports(self):
@@ -110,7 +110,7 @@ class JavaProtobufLibraryTest(BaseTest):
     self.build_graph.inject_spec_closure('//:foo')
     target = self.build_graph.get_target(SyntheticAddress.parse('//:foo'))
     self.assertIsInstance(target, JavaProtobufLibrary)
-    traversable_specs = [spec for spec in target.traversable_specs]
+    traversable_specs = list(target.traversable_specs)
     self.assertSequenceEqual([':import_jars'], traversable_specs)
 
 

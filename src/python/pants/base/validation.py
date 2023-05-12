@@ -25,14 +25,18 @@ def assert_list(obj, expected_type=Compatibility.string, can_be_none=True, defau
     if can_be_none:
       val = list(default)
     else:
-      raise raise_type('Expected an object of acceptable type %s, received None and can_be_none is False' % allowable)
+      raise raise_type(
+          f'Expected an object of acceptable type {allowable}, received None and can_be_none is False'
+      )
 
-  if [typ for typ in allowable if isinstance(val, typ)]:
-    lst = list(val)
-    for e in lst:
-      if not isinstance(e, expected_type):
-        raise raise_type('Expected a list containing values of type %s, instead got a value %s of %s' %
-          (expected_type, e, e.__class__))
-    return lst
-  else:
-    raise raise_type('Expected an object of acceptable type %s, received %s instead' % (allowable, val))
+  if not [typ for typ in allowable if isinstance(val, typ)]:
+    raise raise_type(
+        f'Expected an object of acceptable type {allowable}, received {val} instead'
+    )
+  lst = list(val)
+  for e in lst:
+    if not isinstance(e, expected_type):
+      raise raise_type(
+          f'Expected a list containing values of type {expected_type}, instead got a value {e} of {e.__class__}'
+      )
+  return lst

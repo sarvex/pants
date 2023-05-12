@@ -40,7 +40,8 @@ _JMAKE_ERROR_CODES = {
   -30: 'internal Java error (caused by java.lang.RuntimeException).'
 }
 # When executed via a subprocess return codes will be treated as unsigned
-_JMAKE_ERROR_CODES.update((256 + code, msg) for code, msg in _JMAKE_ERROR_CODES.items())
+_JMAKE_ERROR_CODES |= ((256 + code, msg)
+                       for code, msg in _JMAKE_ERROR_CODES.items())
 
 
 class JavaCompile(JvmCompile):
@@ -145,13 +146,14 @@ class JavaCompile(JvmCompile):
     args.extend(self._args)
 
     args.extend(sources)
-    result = self.runjava(classpath=jmake_classpath,
-                          main=JavaCompile._JMAKE_MAIN,
-                          jvm_options=self._jvm_options,
-                          args=args,
-                          workunit_name='jmake',
-                          workunit_labels=[WorkUnit.COMPILER])
-    if result:
+    if result := self.runjava(
+        classpath=jmake_classpath,
+        main=JavaCompile._JMAKE_MAIN,
+        jvm_options=self._jvm_options,
+        args=args,
+        workunit_name='jmake',
+        workunit_labels=[WorkUnit.COMPILER],
+    ):
       default_message = 'Unexpected error - JMake returned %d' % result
       raise TaskError(_JMAKE_ERROR_CODES.get(result, default_message))
 

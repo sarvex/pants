@@ -39,28 +39,21 @@ class ScalaLibrary(ExportableJvmLibrary):
 
   @property
   def traversable_dependency_specs(self):
-    for spec in super(ScalaLibrary, self).traversable_dependency_specs:
-      yield spec
-
+    yield from super(ScalaLibrary, self).traversable_dependency_specs
     # TODO(John Sirois): Targets should have a config plumbed as part of the implicit
     # BuildFileParser injected context and that could be used to allow in general for targets with
     # knobs and in particular an explict config arg to the TargetPlatform constructor below.
-    for library_spec in TargetPlatform().library_specs:
-      yield library_spec
+    yield from TargetPlatform().library_specs
 
   @property
   def traversable_specs(self):
-    for spec in super(ScalaLibrary, self).traversable_specs:
-      yield spec
-    for java_source_spec in self._java_sources_specs:
-      yield java_source_spec
+    yield from super(ScalaLibrary, self).traversable_specs
+    yield from self._java_sources_specs
 
   def get_jar_dependencies(self):
-    for jar in super(ScalaLibrary, self).get_jar_dependencies():
-      yield jar
+    yield from super(ScalaLibrary, self).get_jar_dependencies()
     for java_source_target in self.java_sources:
-      for jar in java_source_target.jar_dependencies:
-        yield jar
+      yield from java_source_target.jar_dependencies
 
   @property
   def java_sources(self):
@@ -68,5 +61,5 @@ class ScalaLibrary(ExportableJvmLibrary):
       address = SyntheticAddress.parse(spec, relative_to=self.address.spec_path)
       target = self._build_graph.get_target(address)
       if target is None:
-        raise TargetDefinitionException(self, 'No such java target: %s' % spec)
+        raise TargetDefinitionException(self, f'No such java target: {spec}')
       yield target

@@ -30,7 +30,7 @@ from pants.util.dirutil import safe_mkdir, safe_walk
 
 def _copytree(from_base, to_base):
   def abort(error):
-    raise TaskError('Failed to copy from %s to %s: %s' % (from_base, to_base, error))
+    raise TaskError(f'Failed to copy from {from_base} to {to_base}: {error}')
 
   # TODO(John Sirois): Consider adding a unit test and lifting this to common/dirutils or similar
   def safe_link(src, dst):
@@ -138,7 +138,7 @@ class ApacheThriftGen(CodeGen):
     elif lang == 'python':
       gen = self.gen_python.gen
     else:
-      raise TaskError('Unrecognized thrift gen lang: %s' % lang)
+      raise TaskError(f'Unrecognized thrift gen lang: {lang}')
 
     args = [
       self.thrift_binary,
@@ -167,7 +167,7 @@ class ApacheThriftGen(CodeGen):
       cmd = args[:]
       cmd.extend(('-o', outdir))
       cmd.append(source)
-      log.debug('Executing: %s' % ' '.join(cmd))
+      log.debug(f"Executing: {' '.join(cmd)}")
       sessions.append(self.ThriftSession(outdir, cmd, subprocess.Popen(cmd)))
 
     result = 0
@@ -177,7 +177,7 @@ class ApacheThriftGen(CodeGen):
       else:
         result = session.process.wait()
         if result != 0:
-          self.context.log.error('Failed: %s' % ' '.join(session.cmd))
+          self.context.log.error(f"Failed: {' '.join(session.cmd)}")
         else:
           _copytree(session.outdir, self.combined_dir)
     if result != 0:
@@ -189,7 +189,7 @@ class ApacheThriftGen(CodeGen):
     elif lang == 'python':
       return self._create_python_target(gentarget, dependees)
     else:
-      raise TaskError('Unrecognized thrift gen lang: %s' % lang)
+      raise TaskError(f'Unrecognized thrift gen lang: {lang}')
 
   def _create_java_target(self, target, dependees):
     def create_target(files, deps):
@@ -247,26 +247,21 @@ def calculate_gen(source):
     namespaces = {}
     types = defaultdict(set)
     for line in lines:
-      match = NAMESPACE_PARSER.match(line)
-      if match:
+      if match := NAMESPACE_PARSER.match(line):
         lang = match.group(1)
         namespace = match.group(2)
         namespaces[lang] = namespace
-      else:
-        match = TYPE_PARSER.match(line)
-        if match:
-          typename = match.group(1)
-          name = match.group(2)
-          types[typename].add(name)
+      elif match := TYPE_PARSER.match(line):
+        typename = match.group(1)
+        name = match.group(2)
+        types[typename].add(name)
 
     genfiles = defaultdict(set)
 
-    namespace = namespaces.get('py')
-    if namespace:
+    if namespace := namespaces.get('py'):
       genfiles['py'].update(calculate_python_genfiles(namespace, types))
 
-    namespace = namespaces.get('java')
-    if namespace:
+    if namespace := namespaces.get('java'):
       genfiles['java'].update(calculate_java_genfiles(namespace, types))
 
     return types['service'], genfiles
@@ -275,21 +270,23 @@ def calculate_gen(source):
 def calculate_python_genfiles(namespace, types):
   basepath = namespace.replace('.', '/')
   def path(name):
-    return os.path.join(basepath, '%s.py' % name)
+    return os.path.join(basepath, f'{name}.py')
+
   yield path('__init__')
   if 'const' in types:
     yield path('constants')
-  if set(['enum', 'exception', 'struct', 'union']) & set(types.keys()):
+  if {'enum', 'exception', 'struct', 'union'} & set(types.keys()):
     yield path('ttypes')
   for service in types['service']:
     yield path(service)
-    yield os.path.join(basepath, '%s-remote' % service)
+    yield os.path.join(basepath, f'{service}-remote')
 
 
 def calculate_java_genfiles(namespace, types):
   basepath = namespace.replace('.', '/')
   def path(name):
-    return os.path.join(basepath, '%s.java' % name)
+    return os.path.join(basepath, f'{name}.java')
+
   if 'const' in types:
     yield path('Constants')
   for typename in ['enum', 'exception', 'service', 'struct', 'union']:

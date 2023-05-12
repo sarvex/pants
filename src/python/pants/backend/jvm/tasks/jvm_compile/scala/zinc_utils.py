@@ -65,11 +65,8 @@ class ZincUtils(object):
                                                               ini_key='zinc-bootstrap-tools',
                                                               default=['//:zinc'])
 
-    # Compiler plugins.
-    plugins_bootstrap_tools = context.config.getlist('scala-compile',
-                                                     'scalac-plugin-bootstrap-tools',
-                                                     default=[])
-    if plugins_bootstrap_tools:
+    if plugins_bootstrap_tools := context.config.getlist(
+        'scala-compile', 'scalac-plugin-bootstrap-tools', default=[]):
       self._plugins_bootstrap_key = 'plugins'
       self._jvm_tool_bootstrapper.register_jvm_tool(self._plugins_bootstrap_key,
                                                     plugins_bootstrap_tools,
@@ -97,9 +94,10 @@ class ZincUtils(object):
   def _zinc_jar_args(self):
     zinc_jars = ZincUtils.identify_zinc_jars(self._zinc_classpath)
     # The zinc jar names are also the flag names.
-    return (list(chain.from_iterable([['-%s' % name, jarpath]
-                                     for (name, jarpath) in zinc_jars.items()])) +
-            ['-scala-path', ':'.join(self._compiler_classpath)])
+    return list(
+        chain.from_iterable([
+            [f'-{name}', jarpath] for (name, jarpath) in zinc_jars.items()
+        ])) + ['-scala-path', ':'.join(self._compiler_classpath)]
 
   def _plugin_args(self):
     # Allow multiple flags and also comma-separated values in a single flag.
@@ -109,9 +107,8 @@ class ZincUtils(object):
 
     ret = []
     for name, jar in active_plugins.items():
-      ret.append('-S-Xplugin:%s' % jar)
-      for arg in plugin_args.get(name, []):
-        ret.append('-S-P:%s:%s' % (name, arg))
+      ret.append(f'-S-Xplugin:{jar}')
+      ret.extend(f'-S-P:{name}:{arg}' for arg in plugin_args.get(name, []))
     return ret
 
   def plugin_jars(self):
@@ -147,8 +144,7 @@ class ZincUtils(object):
                                           key='compile-bootstrap-tools'))
 
       for lib in (t for t in deps if isinstance(t, JarLibrary)):
-        for jar in lib.jar_dependencies:
-          ret.append(jar.cache_key())
+        ret.extend(jar.cache_key() for jar in lib.jar_dependencies)
     return sorted(ret)
 
   def compile(self, opts, classpath, sources, output_dir, analysis_file, upstream_analysis_files):
@@ -206,11 +202,11 @@ class ZincUtils(object):
     jars_and_filenames = [(x, os.path.basename(x)) for x in jars]
 
     for name in names:
-      jar_for_name = None
-      for jar, filename in jars_and_filenames:
-        if filename.startswith(name):
-          jar_for_name = jar
-          break
+      jar_for_name = next(
+          (jar
+           for jar, filename in jars_and_filenames if filename.startswith(name)),
+          None,
+      )
       if jar_for_name is None:
         raise TaskError('Couldn\'t find jar named %s' % name)
       else:
@@ -231,20 +227,21 @@ class ZincUtils(object):
             plugin_info = ElementTree.parse(plugin_info_file).getroot()
           if plugin_info.tag != 'plugin':
             raise TaskError(
-              'File %s in %s is not a valid scalac plugin descriptor' % (_PLUGIN_INFO_FILE, jar))
+                f'File {_PLUGIN_INFO_FILE} in {jar} is not a valid scalac plugin descriptor'
+            )
           name = plugin_info.find('name').text
           if name in plugin_names:
             if name in plugins:
-              raise TaskError('Plugin %s defined in %s and in %s' % (name, plugins[name], jar))
+              raise TaskError(f'Plugin {name} defined in {plugins[name]} and in {jar}')
             # It's important to use relative paths, as the compiler flags get embedded in the zinc
             # analysis file, and we port those between systems via the artifact cache.
             plugins[name] = os.path.relpath(jar, buildroot)
         except KeyError:
           pass
 
-    unresolved_plugins = plugin_names - set(plugins.keys())
-    if unresolved_plugins:
-      raise TaskError('Could not find requested plugins: %s' % list(unresolved_plugins))
+    if unresolved_plugins := plugin_names - set(plugins.keys()):
+      raise TaskError(
+          f'Could not find requested plugins: {list(unresolved_plugins)}')
     return plugins
 
   def log_zinc_file(self, analysis_file):

@@ -90,9 +90,10 @@ class PythonBinary(PythonTarget):
       entry_source = list(self.sources_relative_to_source_root())[0]
       source_entry_point = self._translate_to_entry_point(entry_source)
       if entry_point_module != source_entry_point:
-        raise TargetDefinitionException(self,
-            'Specified both source and entry_point but they do not agree: %s vs %s' % (
-            source_entry_point, entry_point_module))
+        raise TargetDefinitionException(
+            self,
+            f'Specified both source and entry_point but they do not agree: {source_entry_point} vs {entry_point_module}',
+        )
 
   @property
   def platforms(self):

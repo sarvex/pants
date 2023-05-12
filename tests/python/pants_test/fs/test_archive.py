@@ -37,7 +37,7 @@ class ArchiveTest(unittest.TestCase):
             archiver.extract(archive, todir)
             fromlisting = self._listtree(fromdir, empty_dirs)
             if prefix:
-              fromlisting = set(os.path.join(prefix, x) for x in fromlisting)
+              fromlisting = {os.path.join(prefix, x) for x in fromlisting}
               if empty_dirs:
                 fromlisting.add(prefix)
             self.assertEqual(fromlisting, self._listtree(todir, empty_dirs))
@@ -65,4 +65,4 @@ class ArchiveTest(unittest.TestCase):
         archive = ZIP.create(fromdir, archivedir, 'archive')
         with temporary_dir() as todir:
           ZIP.extract(archive, todir, filter=do_filter)
-          self.assertEquals(set(['allowed.txt']), self._listtree(todir, empty_dirs=False))
+          self.assertEquals({'allowed.txt'}, self._listtree(todir, empty_dirs=False))

@@ -25,7 +25,9 @@ class PythonBuilder(object):
     interpreter = interpreter or PythonInterpreter.get()
 
     for target in targets:
-      assert target.is_python, "PythonBuilder can only build PythonTargets, given %s" % str(target)
+      assert (
+          target.is_python
+      ), f"PythonBuilder can only build PythonTargets, given {str(target)}"
 
     # PythonBuilder supports PythonTests and PythonBinaries
     for target in targets:

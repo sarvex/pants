@@ -162,14 +162,9 @@ class ProtobufGen(CodeGen):
     args = [self.protobuf_binary, gen]
 
     if self.plugins:
-      for plugin in self.plugins:
-        # TODO(Eric Ayers) Is it a good assumption that the generated source output dir is
-        # acceptable for all plugins?
-        args.append("--{0}_protobuf_out={1}".format(plugin, output_dir))
-
-    for base in bases:
-      args.append('--proto_path={0}'.format(base))
-
+      args.extend("--{0}_protobuf_out={1}".format(plugin, output_dir)
+                  for plugin in self.plugins)
+    args.extend('--proto_path={0}'.format(base) for base in bases)
     args.extend(sources)
     log.debug('Executing: {0}'.format('\\\n  '.join(args)))
     process = subprocess.Popen(args)
@@ -211,10 +206,12 @@ class ProtobufGen(CodeGen):
     address = SyntheticAddress(spec_path, target.id)
     deps = OrderedSet(self.javadeps)
     import_jars = target.imports
-    jars_tgt = self.context.add_new_target(SyntheticAddress(spec_path, target.id+str('-rjars')),
-                                           JarLibrary,
-                                           jars=import_jars,
-                                           derived_from=target)
+    jars_tgt = self.context.add_new_target(
+        SyntheticAddress(spec_path, f'{target.id}-rjars'),
+        JarLibrary,
+        jars=import_jars,
+        derived_from=target,
+    )
     # Add in the 'spec-rjars' target, which contains all the JarDependency targets passed in via the
     # imports parameter. Each of these jars is expected to contain .proto files bundled together
     # with their .class files.
@@ -263,10 +260,14 @@ def calculate_python_genfiles(source):
 def calculate_java_genfiles(protobuf_parse):
   basepath = protobuf_parse.package.replace('.', os.path.sep)
 
-  classnames = set([protobuf_parse.outer_class_name])
+  classnames = {protobuf_parse.outer_class_name}
   if protobuf_parse.multiple_files:
-    classnames |= protobuf_parse.enums | protobuf_parse.messages | protobuf_parse.services | \
-      set(['{name}OrBuilder'.format(name=m) for m in protobuf_parse.messages])
+    classnames |= (
+        protobuf_parse.enums
+        | protobuf_parse.messages
+        | protobuf_parse.services
+        | {'{name}OrBuilder'.format(name=m)
+           for m in protobuf_parse.messages})
 
   for classname in classnames:
     yield os.path.join(basepath, '{0}.java'.format(classname))
@@ -295,7 +296,7 @@ def check_duplicate_conflicting_protos(sources_by_base, sources, log):
   sources_by_genfile = {}
   for base in sources_by_base.keys(): # Need to iterate over /original/ bases.
     for path in sources_by_base[base]:
-      if not path in sources:
+      if path not in sources:
         continue # Check to make sure we haven't already removed it.
       source = path[len(base):]
 
@@ -305,7 +306,7 @@ def check_duplicate_conflicting_protos(sources_by_base, sources, log):
           if genfile in sources_by_genfile:
             # Possible conflict!
             prev = sources_by_genfile[genfile]
-            if not prev in sources:
+            if prev not in sources:
               # Must have been culled by an earlier pass.
               continue
             if not _same_contents(path, prev):

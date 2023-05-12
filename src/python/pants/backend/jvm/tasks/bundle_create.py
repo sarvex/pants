@@ -44,7 +44,7 @@ class BundleCreate(JvmBinaryTask):
       return isinstance(target, (JvmApp, JvmBinary))
 
     def __init__(self, target):
-      assert self.is_app(target), '%s is not a valid app target' % target
+      assert self.is_app(target), f'{target} is not a valid app target'
 
       self.binary = target if isinstance(target, JvmBinary) else target.binary
       self.bundles = [] if isinstance(target, JvmBinary) else target.payload.bundles
@@ -62,7 +62,8 @@ class BundleCreate(JvmBinaryTask):
             app.basename,
             prefix=app.basename if self._prefix else None
           )
-          self.context.log.info('created %s' % os.path.relpath(archivepath, get_buildroot()))
+          self.context.log.info(
+              f'created {os.path.relpath(archivepath, get_buildroot())}')
 
   def bundle(self, app):
     """Create a self-contained application bundle.
@@ -78,8 +79,9 @@ class BundleCreate(JvmBinaryTask):
         self.context.log.error("Unable to create symlink: {0} -> {1}".format(src, dst))
         raise e
 
-    bundle_dir = os.path.join(self._outdir, '%s-bundle' % app.basename)
-    self.context.log.info('creating %s' % os.path.relpath(bundle_dir, get_buildroot()))
+    bundle_dir = os.path.join(self._outdir, f'{app.basename}-bundle')
+    self.context.log.info(
+        f'creating {os.path.relpath(bundle_dir, get_buildroot())}')
 
     safe_mkdir(bundle_dir, clean=True)
 
@@ -109,7 +111,7 @@ class BundleCreate(JvmBinaryTask):
         verbose_symlink(path, os.path.join(lib_dir, external_jar))
         classpath.add(external_jar)
 
-    bundle_jar = os.path.join(bundle_dir, '%s.jar' % app.binary.basename)
+    bundle_jar = os.path.join(bundle_dir, f'{app.binary.basename}.jar')
 
     with self.monolithic_jar(app.binary, bundle_jar,
                              with_external_deps=self._create_deployjar) as jar:

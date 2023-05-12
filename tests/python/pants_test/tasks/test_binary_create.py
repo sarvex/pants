@@ -16,7 +16,7 @@ pants_distdir = /tmp/dist
 
 
 class BinaryCreateTest(TaskTestBase):
-  def task_type(cls):
+  def task_type(self):
     return BinaryCreate
 
   def test_binary_create_init(self):

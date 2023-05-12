@@ -73,8 +73,7 @@ class Checkstyle(NailgunTask, JvmToolTaskMixin):
       invalid_targets = []
       for vt in invalidation_check.invalid_vts:
         invalid_targets.extend(vt.targets)
-      sources = self.calculate_sources(invalid_targets)
-      if sources:
+      if sources := self.calculate_sources(invalid_targets):
         result = self.checkstyle(sources, invalid_targets)
         if result != 0:
           raise TaskError('java %s ... exited non-zero (%i)' % (CHECKSTYLE_MAIN, result))

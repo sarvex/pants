@@ -45,7 +45,7 @@ class SortTargets(ConsoleTask):
     if self._reverse:
       tsorted = reversed(tsorted)
 
-    roots = set(root.address.spec for root in self.context.target_roots)
+    roots = {root.address.spec for root in self.context.target_roots}
     for address in tsorted:
       if address in roots:
         yield address

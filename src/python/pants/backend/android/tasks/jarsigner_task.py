@@ -52,20 +52,29 @@ class JarsignerTask(Task):
     # past their validity date. But Android purposefully passes 30 years validity. More research
     # is needed before passing a -tsa flag indiscriminately.
     # http://bugs.java.com/view_bug.do?bug_id=8023338
-    args = []
-    args.extend([self.distribution.binary('jarsigner')])
-
-    # first two are required flags for JDK 7+
-    args.extend(['-sigalg', 'SHA1withRSA'])
-    args.extend(['-digestalg', 'SHA1'])
-
-    args.extend(['-keystore', key.location])
-    args.extend(['-storepass', key.keystore_password])
-    args.extend(['-keypass', key.key_password])
-    args.extend(['-signedjar', (os.path.join(self.jarsigner_out(target), target.app_name
-                                             + '-' + key.build_type + '-signed.apk'))])
-    args.append(unsigned_apk)
-    args.append(key.keystore_alias)
+    args = [
+        self.distribution.binary('jarsigner'),
+        '-sigalg',
+        'SHA1withRSA',
+        '-digestalg',
+        'SHA1',
+    ]
+    args.extend([
+        '-keystore',
+        key.location,
+        '-storepass',
+        key.keystore_password,
+        '-keypass',
+        key.key_password,
+    ])
+    args.extend([
+        '-signedjar',
+        os.path.join(
+            self.jarsigner_out(target),
+            f'{target.app_name}-{key.build_type}-signed.apk',
+        ),
+    ])
+    args.extend((unsigned_apk, key.keystore_alias))
     return args
 
   def execute(self):
@@ -77,10 +86,7 @@ class JarsignerTask(Task):
           invalid_targets.extend(vt.targets)
         for target in invalid_targets:
           safe_mkdir(self.jarsigner_out(target))
-          if self._build_type:
-            build_type = self._build_type
-          else:
-            build_type = target.build_type
+          build_type = self._build_type if self._build_type else target.build_type
           keys = []
 
           def get_apk(target):
@@ -93,9 +99,8 @@ class JarsignerTask(Task):
 
           def get_key(key):
             """Return Keystore objects that match the target's build_type."""
-            if isinstance(key, Keystore):
-              if key.build_type == build_type:
-                keys.append(key)
+            if isinstance(key, Keystore) and key.build_type == build_type:
+              keys.append(key)
 
           unsigned_apk = get_apk(target)
           target.walk(get_key)

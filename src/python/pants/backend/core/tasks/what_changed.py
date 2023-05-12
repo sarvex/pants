@@ -37,8 +37,7 @@ class WhatChanged(ConsoleTask):
 
     touched_files = self._get_touched_files()
     if self._show_files:
-      for path in touched_files:
-        yield path
+      yield from touched_files
     else:
       touched_targets = set()
       for path in touched_files:
@@ -80,10 +79,8 @@ class WhatChanged(ConsoleTask):
     build_file = BuildFile(get_buildroot(), relpath=os.path.dirname(path), must_exist=False)
     if build_file.exists():
       yield build_file
-    for sibling in build_file.siblings():
-      yield sibling
-    for ancestor in build_file.ancestors():
-      yield ancestor
+    yield from build_file.siblings()
+    yield from build_file.ancestors()
 
   def _owns(self, target, path):
     if target not in self._filemap:

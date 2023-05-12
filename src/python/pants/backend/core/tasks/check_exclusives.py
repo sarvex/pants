@@ -83,12 +83,11 @@ class CheckExclusives(Task):
       excl = t.get_all_exclusives()
       for key in excl:
         if len(excl[key]) > 1:
-          msg = 'target %s has more than one exclusives tag for key %s: %s' % \
-                (t.address.reference(), key, list(excl[key]))
+          msg = f'target {t.address.reference()} has more than one exclusives tag for key {key}: {list(excl[key])}'
           if self.get_options().error_on_collision:
             raise TaskError(msg)
           else:
-            print('Warning: %s' % msg)
+            print(f'Warning: {msg}')
 
     if self.context.products.is_required_data('exclusives_groups'):
       mapping = ExclusivesMapping(self.context)
@@ -185,14 +184,11 @@ class ExclusivesMapping(object):
     for k in self.conflicting_exclusives:
       excl = target.exclusives if isinstance(target, Target) else target.declared_exclusives
       if len(excl[k]) > 0:
-        target_key.append("%s=%s" % (k, list(excl[k])[0]))
+        target_key.append(f"{k}={list(excl[k])[0]}")
       else:
-        target_key.append("%s=<none>" % k)
+        target_key.append(f"{k}=<none>")
 
-    if target_key == []:
-      return "<none>"
-    else:
-      return ','.join(target_key)
+    return "<none>" if not target_key else ','.join(target_key)
 
   def _populate_target_maps(self, targets):
     """Populates maps of exclusive keys to targets, and vice versa."""
@@ -228,7 +224,7 @@ class ExclusivesMapping(object):
 
   def _key_to_map(self, key):
     result = {}
-    if key == '<none>' or key == '':
+    if key in ['<none>', '']:
       return result
     pairs = key.split(',')
     for p in pairs:
@@ -248,7 +244,7 @@ class ExclusivesMapping(object):
     for k in mod_map:
       vm = mod_map[k]
       vo = other_map[k]
-      if not (vm == vo or vm == "<none>"):
+      if vm not in [vo, "<none>"]:
         return False
     return True
 

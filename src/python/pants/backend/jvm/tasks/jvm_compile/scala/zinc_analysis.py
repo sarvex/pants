@@ -146,7 +146,7 @@ class ZincAnalysis(Analysis):
     """
     ret = defaultdict(list)
     for d in dicts:
-      ret.update(d)
+      ret |= d
     return ret
 
   @classmethod
@@ -159,7 +159,7 @@ class ZincAnalysis(Analysis):
     classes = ZincAnalysis.merge_dicts([a.relations.classes for a in analyses])
     used = ZincAnalysis.merge_dicts([a.relations.used for a in analyses])
 
-    class_to_source = dict((v, k) for k, vs in classes.items() for v in vs)
+    class_to_source = {v: k for k, vs in classes.items() for v in vs}
 
     def merge_dependencies(internals, externals):
       internal = defaultdict(list)
@@ -229,7 +229,10 @@ class ZincAnalysis(Analysis):
     source_infos = SourceInfos((ZincAnalysis.merge_dicts([a.source_infos.source_infos for a in analyses]), ))
 
     # Merge compilations.
-    compilation_vals = sorted(set([x[0] for a in analyses for x in a.compilations.compilations.itervalues()]))
+    compilation_vals = sorted({
+        x[0]
+        for a in analyses for x in a.compilations.compilations.itervalues()
+    })
     compilations_dict = defaultdict(list)
     for i, v in enumerate(compilation_vals):
       compilations_dict['%03d' % i] = [v]
@@ -273,7 +276,8 @@ class ZincAnalysis(Analysis):
   def split(self, splits, catchall=False):
     # Note: correctly handles "externalizing" internal deps that must be external post-split.
     buildroot = get_buildroot()
-    splits = [set([s if os.path.isabs(s) else os.path.join(buildroot, s) for s in x]) for x in splits]
+    splits = [{s if os.path.isabs(s) else os.path.join(buildroot, s)
+               for s in x} for x in splits]
     if catchall:
       # Even empty sources with no products have stamps.
       remainder_sources = set(self.stamps.sources.keys()).difference(*splits)
@@ -286,7 +290,7 @@ class ZincAnalysis(Analysis):
 
     # For historical reasons, external deps are specified as src->class while internal deps are
     # specified as src->src. So we pick a representative class for each src.
-    representatives = dict((k, min(vs)) for k, vs in self.relations.classes.items())
+    representatives = {k: min(vs) for k, vs in self.relations.classes.items()}
 
     def split_dependencies(all_internal, all_external):
       internals = []
@@ -313,14 +317,14 @@ class ZincAnalysis(Analysis):
       return internals, externals
 
     internal_splits, external_splits = \
-      split_dependencies(self.relations.internal_src_dep, self.relations.external_dep)
+        split_dependencies(self.relations.internal_src_dep, self.relations.external_dep)
     internal_pi_splits, external_pi_splits = \
-      split_dependencies(self.relations.internal_src_dep_pi, self.relations.external_dep_pi)
+        split_dependencies(self.relations.internal_src_dep_pi, self.relations.external_dep_pi)
 
     member_ref_internal_splits, member_ref_external_splits = \
-      split_dependencies(self.relations.member_ref_internal_dep, self.relations.member_ref_external_dep)
+        split_dependencies(self.relations.member_ref_internal_dep, self.relations.member_ref_external_dep)
     inheritance_internal_splits, inheritance_external_splits = \
-      split_dependencies(self.relations.inheritance_internal_dep, self.relations.inheritance_external_dep)
+        split_dependencies(self.relations.inheritance_internal_dep, self.relations.inheritance_external_dep)
     used_splits = self._split_dict(self.relations.used, splits)
 
     relations_splits = []
@@ -337,10 +341,13 @@ class ZincAnalysis(Analysis):
     for src_prod, binary_dep, split in zip(src_prod_splits, binary_dep_splits, splits):
       products_set = set(itertools.chain(*src_prod.values()))
       binaries_set = set(itertools.chain(*binary_dep.values()))
-      products = dict((k, v) for k, v in self.stamps.products.items() if k in products_set)
-      sources = dict((k, v) for k, v in self.stamps.sources.items() if k in split)
-      binaries = dict((k, v) for k, v in self.stamps.binaries.items() if k in binaries_set)
-      classnames = dict((k, v) for k, v in self.stamps.classnames.items() if k in binaries_set)
+      products = {k: v for k, v in self.stamps.products.items() if k in products_set}
+      sources = {k: v for k, v in self.stamps.sources.items() if k in split}
+      binaries = {k: v for k, v in self.stamps.binaries.items() if k in binaries_set}
+      classnames = {
+          k: v
+          for k, v in self.stamps.classnames.items() if k in binaries_set
+      }
       stamps_splits.append(Stamps((products, sources, binaries, classnames)))
 
     # Split apis.
@@ -369,7 +376,7 @@ class ZincAnalysis(Analysis):
 
     # Split source infos.
     source_info_splits = \
-      [SourceInfos((x, )) for x in self._split_dict(self.source_infos.source_infos, splits)]
+        [SourceInfos((x, )) for x in self._split_dict(self.source_infos.source_infos, splits)]
 
     analyses = []
     for relations, stamps, apis, source_infos in zip(relations_splits, stamps_splits, apis_splits, source_info_splits):
@@ -541,9 +548,6 @@ class ZincAnalysisJSONEncoder(json.JSONEncoder):
   """
   def default(self, obj):
     if isinstance(obj, ZincAnalysisElement):
-      ret = {}
-      for h, a in zip(type(obj).headers, obj.args):
-        ret[h] = a
-      return ret
+      return dict(zip(type(obj).headers, obj.args))
     else:
       super(ZincAnalysisJSONEncoder, self).default(obj)

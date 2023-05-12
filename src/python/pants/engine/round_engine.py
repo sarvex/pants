@@ -37,14 +37,14 @@ class GoalExecutor(object):
       for name, task in reversed(self._tasks_by_name.items()):
         with self._context.new_workunit(name=name, labels=[WorkUnit.TASK]):
           if explain:
-            self._context.log.debug('Skipping execution of %s in explain mode' % name)
+            self._context.log.debug(f'Skipping execution of {name} in explain mode')
           else:
             task.execute()
 
       if explain:
         reversed_tasks_by_name = reversed(self._tasks_by_name.items())
-        goal_to_task = ', '.join(
-            '%s->%s' % (name, task.__class__.__name__) for name, task in reversed_tasks_by_name)
+        goal_to_task = ', '.join(f'{name}->{task.__class__.__name__}'
+                                 for name, task in reversed_tasks_by_name)
         print('{goal} [{goal_to_task}]'.format(goal=self._goal.name, goal_to_task=goal_to_task))
 
 
@@ -138,9 +138,6 @@ class RoundEngine(Engine):
                           producer_task=producer_info.task_type.__name__,
                           goal=goal.name,
                           ordering=ordering))
-            else:
-              # We don't express dependencies on downstream tasks in this same goal.
-              pass
           else:
             goal_dependencies.add(producer_goal)
       except round_manager.MissingProductError as e:

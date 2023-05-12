@@ -59,8 +59,7 @@ class VersionedTargetSet(object):
     self._cache_manager.force_invalidate(self)
 
   def __repr__(self):
-    return 'VTS(%s, %s)' % (','.join(target.id for target in self.targets),
-                            'valid' if self.valid else 'invalid')
+    return f"VTS({','.join(target.id for target in self.targets)}, {'valid' if self.valid else 'invalid'})"
 
 
 class VersionedTarget(VersionedTargetSet):
@@ -69,7 +68,8 @@ class VersionedTarget(VersionedTargetSet):
   """
   def __init__(self, cache_manager, target, cache_key):
     if not isinstance(target, Target):
-      raise ValueError("The target %s must be an instance of Target but is not." % target.id)
+      raise ValueError(
+          f"The target {target.id} must be an instance of Target but is not.")
 
     self.target = target
     self.cache_key = cache_key
@@ -270,7 +270,8 @@ class InvalidationCacheManager(object):
       # This is a catch-all for problems we haven't caught up with and given a better diagnostic.
       # TODO(Eric Ayers): If you see this exception, add a fix to catch the problem earlier.
       exc_info = sys.exc_info()
-      new_exception = self.CacheValidationError("Problem validating target %s in %s: %s" %
-                                                (target.id, target.address.spec_path, e))
+      new_exception = self.CacheValidationError(
+          f"Problem validating target {target.id} in {target.address.spec_path}: {e}"
+      )
 
       raise self.CacheValidationError, new_exception, exc_info[2]

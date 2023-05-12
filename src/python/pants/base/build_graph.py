@@ -193,16 +193,18 @@ class BuildGraph(object):
     """
     walked = set()
     def _walk_rec(address):
-      if address not in walked:
-        walked.add(address)
-        target = self._target_by_address[address]
-        if not predicate or predicate(target):
-          if not postorder:
-            work(target)
-          for dep_address in self._target_dependencies_by_address[address]:
-            _walk_rec(dep_address)
-          if postorder:
-            work(target)
+      if address in walked:
+        return
+      walked.add(address)
+      target = self._target_by_address[address]
+      if not predicate or predicate(target):
+        if not postorder:
+          work(target)
+        for dep_address in self._target_dependencies_by_address[address]:
+          _walk_rec(dep_address)
+        if postorder:
+          work(target)
+
     for address in addresses:
       _walk_rec(address)
 
@@ -215,16 +217,18 @@ class BuildGraph(object):
     """
     walked = set()
     def _walk_rec(address):
-      if address not in walked:
-        walked.add(address)
-        target = self._target_by_address[address]
-        if not predicate or predicate(target):
-          if not postorder:
-            work(target)
-          for dep_address in self._target_dependees_by_address[address]:
-            _walk_rec(dep_address)
-          if postorder:
-            work(target)
+      if address in walked:
+        return
+      walked.add(address)
+      target = self._target_by_address[address]
+      if not predicate or predicate(target):
+        if not postorder:
+          work(target)
+        for dep_address in self._target_dependees_by_address[address]:
+          _walk_rec(dep_address)
+        if postorder:
+          work(target)
+
     for address in addresses:
       _walk_rec(address)
 
@@ -329,7 +333,7 @@ class BuildGraph(object):
         self.inject_target(target, dependencies=dep_addresses)
       else:
         for dep_address in dep_addresses:
-          if not dep_address in self.dependencies_of(address):
+          if dep_address not in self.dependencies_of(address):
             self.inject_dependency(address, dep_address)
         target = self.get_target(address)
 

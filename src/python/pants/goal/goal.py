@@ -131,12 +131,11 @@ class _Goal(object):
     TODO(benjy): Should it? We're moving away from explicit goal deps towards a
                  product consumption-production model anyway.
     """
-    if name in self._task_type_by_name:
-      self._task_type_by_name[name].options_scope = None
-      del self._task_type_by_name[name]
-      self._ordered_task_names = [x for x in self._ordered_task_names if x != name]
-    else:
+    if name not in self._task_type_by_name:
       raise GoalError('Cannot uninstall unknown task: {0}'.format(name))
+    self._task_type_by_name[name].options_scope = None
+    del self._task_type_by_name[name]
+    self._ordered_task_names = [x for x in self._ordered_task_names if x != name]
 
   def known_scopes(self):
     """Yields all known scopes under this goal (including its own.)"""
@@ -160,10 +159,7 @@ class _Goal(object):
 
   def has_task_of_type(self, typ):
     """Returns True if this goal has a task of the given type (or a subtype of it)."""
-    for task_type in self.task_types():
-      if issubclass(task_type, typ):
-        return True
-    return False
+    return any(issubclass(task_type, typ) for task_type in self.task_types())
 
   def __repr__(self):
     return self.name

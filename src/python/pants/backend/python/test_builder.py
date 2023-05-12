@@ -81,21 +81,20 @@ class PythonTestBuilder(object):
   def run(self, stdout=None, stderr=None):
     if self._fast:
       return 0 if self._run_tests(self._targets, stdout, stderr).success else 1
-    else:
-      results = {}
-      # Coverage often throws errors despite tests succeeding, so force failsoft in that case.
-      fail_hard = ('PANTS_PYTHON_TEST_FAILSOFT' not in os.environ and
-                   'PANTS_PY_COVERAGE' not in os.environ)
-      for target in self._targets:
-        if isinstance(target, PythonTests):
-          rv = self._run_tests([target], stdout, stderr)
-          results[target.id] = rv
-          if not rv.success and fail_hard:
-            break
-      for target in sorted(results):
-        # TODO: Replace print() calls in this file with logging.
-        print('%-80s.....%10s' % (target, results[target]), file=stdout)
-      return 0 if all(rc.success for rc in results.values()) else 1
+    results = {}
+    # Coverage often throws errors despite tests succeeding, so force failsoft in that case.
+    fail_hard = ('PANTS_PYTHON_TEST_FAILSOFT' not in os.environ and
+                 'PANTS_PY_COVERAGE' not in os.environ)
+    for target in self._targets:
+      if isinstance(target, PythonTests):
+        rv = self._run_tests([target], stdout, stderr)
+        results[target.id] = rv
+        if not rv.success and fail_hard:
+          break
+    for target in sorted(results):
+      # TODO: Replace print() calls in this file with logging.
+      print('%-80s.....%10s' % (target, results[target]), file=stdout)
+    return 0 if all(rc.success for rc in results.values()) else 1
 
   @contextmanager
   def _maybe_emit_junit_xml(self, targets):
@@ -103,9 +102,10 @@ class PythonTestBuilder(object):
     xml_base = os.getenv('JUNIT_XML_BASE')
     if xml_base and targets:
       xml_base = os.path.realpath(xml_base)
-      xml_path = os.path.join(xml_base, Target.maybe_readable_identify(targets) + '.xml')
+      xml_path = os.path.join(xml_base,
+                              f'{Target.maybe_readable_identify(targets)}.xml')
       safe_mkdir(os.path.dirname(xml_path))
-      args.append('--junitxml=%s' % xml_path)
+      args.append(f'--junitxml={xml_path}')
     yield args
 
   DEFAULT_COVERAGE_CONFIG = dedent(b"""
@@ -177,8 +177,10 @@ class PythonTestBuilder(object):
         # consider supporting configuration of a global scheme whether that be parallel
         # dirs/packages or some arbitrary function that can be registered that takes a test target
         # and hands back the source packages or paths under test.
-        return set(os.path.dirname(source).replace(os.sep, '.')
-                   for source in target.sources_relative_to_source_root())
+        return {
+            os.path.dirname(source).replace(os.sep, '.')
+            for source in target.sources_relative_to_source_root()
+        }
 
     if coverage_modules is None:
       coverage_modules = set(itertools.chain(*[compute_coverage_modules(t) for t in targets]))

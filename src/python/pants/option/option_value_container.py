@@ -77,12 +77,7 @@ class OptionValueContainer(object):
     else:
       existing_rank = RankedValue.NONE
 
-    if isinstance(value, RankedValue):
-      new_rank = value.rank
-    else:
-      # Values without rank are assumed to be flag values set by argparse.
-      new_rank = RankedValue.FLAG
-
+    new_rank = value.rank if isinstance(value, RankedValue) else RankedValue.FLAG
     if new_rank >= existing_rank:
       # We set values from outer scopes before values from inner scopes, so
       # in case of equal rank we overwrite. That way that the inner scope value wins.
@@ -96,9 +91,6 @@ class OptionValueContainer(object):
       # In case we get called in copy/deepcopy, which don't invoke the ctor.
       raise AttributeError
     if key not in self._forwardings:
-      raise AttributeError('No such forwarded attribute: %s' % key)
+      raise AttributeError(f'No such forwarded attribute: {key}')
     val = getattr(self, self._forwardings[key])
-    if isinstance(val, RankedValue):
-      return val.value
-    else:
-      return val
+    return val.value if isinstance(val, RankedValue) else val

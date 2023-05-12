@@ -159,7 +159,7 @@ class Context(object):
 
   def __str__(self):
     ident = Target.identify(self.targets())
-    return 'Context(id:%s, targets:%s)' % (ident, self.targets())
+    return f'Context(id:{ident}, targets:{self.targets()})'
 
   def submit_foreground_work_and_wait(self, work, workunit_parent=None):
     """Returns the pool to which tasks can submit foreground (blocking) work."""
@@ -227,9 +227,8 @@ class Context(object):
     """
     if not self._lock.i_am_locking():
       return False
-    else:
-      self._lock.release()
-      return True
+    self._lock.release()
+    return True
 
   def is_unlocked(self):
     """Whether the global lock object is actively holding the lock."""

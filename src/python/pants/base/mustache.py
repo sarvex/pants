@@ -34,8 +34,10 @@ class MustacheRenderer(object):
         return [convert_val(e) for e in x]
       else:
         return x
+
     items = [(key, convert_val(val)) for (key, val) in args.items()]
-    ret = dict([(key + '?', True) for (key, val) in items if val and not key.endswith('?')])
+    ret = dict([(f'{key}?', True) for (key, val) in items
+                if val and not key.endswith('?')])
     ret.update(dict(items))
     return ret
 
@@ -53,20 +55,18 @@ class MustacheRenderer(object):
     self._pystache_renderer = pystache.Renderer(search_dirs=template_dir)
 
   def render_name(self, template_name, args):
-    # TODO: Precompile and cache the templates?
     if self._template_dir:
       # Let pystache find the template by name.
       return self._pystache_renderer.render_name(template_name, MustacheRenderer.expand(args))
-    else:
       # Load the named template embedded in our package.
-      path = os.path.join('templates', template_name + '.mustache')
-      template = pkgutil.get_data(self._package_name, path)
+    path = os.path.join('templates', f'{template_name}.mustache')
+    template = pkgutil.get_data(self._package_name, path)
 
-      if template == None:
-        raise self.MustacheError(
-          "could not find template %s in package %s" % (path, self._package_name))
+    if template is None:
+      raise self.MustacheError(
+          f"could not find template {path} in package {self._package_name}")
 
-      return self.render(template, args)
+    return self.render(template, args)
 
   def render(self, template, args):
     return self._pystache_renderer.render(template, MustacheRenderer.expand(args))

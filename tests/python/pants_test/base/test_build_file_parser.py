@@ -119,10 +119,14 @@ class BuildFileParserTargetTest(BaseTest):
 
     address_map = self.build_file_parser.address_map_from_spec_path(bar_build_file.spec_path)
     addresses = address_map.keys()
-    self.assertEqual(set([bar_build_file, base_build_file, foo_build_file]),
-                     set([address.build_file for address in addresses]))
-    self.assertEqual(set([':base', ':foo', ':bat']),
-                     set([address.spec for address in addresses]))
+    self.assertEqual(
+        {bar_build_file, base_build_file, foo_build_file},
+        {address.build_file
+         for address in addresses},
+    )
+    self.assertEqual({':base', ':foo', ':bat'},
+                     {address.spec
+                      for address in addresses})
 
   def test_build_file_duplicates(self):
     # This workspace has two targets in the same file with the same name.
@@ -186,9 +190,9 @@ class BuildFileParserExposedContextAwareObjectFactoryTest(BaseTest):
   def create_java_libraries(parse_context):
 
     def real_create_java_libraries(base_name,
-                                   org='com.twitter',
-                                   provides_java_name=None,
-                                   provides_scala_name=None):
+                                     org='com.twitter',
+                                     provides_java_name=None,
+                                     provides_scala_name=None):
 
       def provides_artifact(provides_name):
         if provides_name is None:
@@ -203,17 +207,21 @@ class BuildFileParserExposedContextAwareObjectFactoryTest(BaseTest):
                                            name=provides_name,
                                            repo=jvm_repo)
 
-      parse_context.create_object('java_library',
-                                  name='%s-java' % base_name,
-                                  sources=[],
-                                  dependencies=[],
-                                  provides=provides_artifact(provides_java_name))
+      parse_context.create_object(
+          'java_library',
+          name=f'{base_name}-java',
+          sources=[],
+          dependencies=[],
+          provides=provides_artifact(provides_java_name),
+      )
 
-      parse_context.create_object('scala_library',
-                                  name='%s-scala' % base_name,
-                                  sources=[],
-                                  dependencies=[],
-                                  provides=provides_artifact(provides_scala_name))
+      parse_context.create_object(
+          'scala_library',
+          name=f'{base_name}-scala',
+          sources=[],
+          dependencies=[],
+          provides=provides_artifact(provides_scala_name),
+      )
 
     return real_create_java_libraries
 
@@ -260,19 +268,23 @@ class BuildFileParserExposedContextAwareObjectFactoryTest(BaseTest):
     registered_proxies = set(address_map.values())
 
     self.assertEqual(len(registered_proxies), 3)
-    targets_created = {}
-    for target_proxy in registered_proxies:
-      targets_created[target_proxy.name] = target_proxy.target_type
-
-    self.assertEqual(set(['does_not_exists',
-                          'create-java-libraries-scala',
-                          'create-java-libraries-java']),
-                     set(targets_created.keys()))
+    targets_created = {
+        target_proxy.name: target_proxy.target_type
+        for target_proxy in registered_proxies
+    }
+    self.assertEqual(
+        {
+            'does_not_exists',
+            'create-java-libraries-scala',
+            'create-java-libraries-java',
+        },
+        set(targets_created.keys()),
+    )
     self.assertEqual(targets_created['does_not_exists'], JarLibrary)
     self.assertEqual(targets_created['create-java-libraries-java'], JavaLibrary)
     self.assertEqual(targets_created['create-java-libraries-scala'], ScalaLibrary)
 
-    self.assertEqual(set(['3rdparty/baz']), self._paths)
+    self.assertEqual({'3rdparty/baz'}, self._paths)
 
   def test_raises_build_file_scan_error(self):
     with self.assertRaises(BuildFileParser.BuildFileScanError):

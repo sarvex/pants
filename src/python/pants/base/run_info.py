@@ -83,8 +83,7 @@ class RunInfo(object):
 
   def add_scm_info(self):
     """Adds SCM-related info and returns a dict composed of just this added info."""
-    scm = get_scm()
-    if scm:
+    if scm := get_scm():
       revision = scm.commit_id
       tag = scm.tag_name or 'none'
       branch = scm.branch_name or revision

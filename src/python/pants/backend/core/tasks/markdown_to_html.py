@@ -154,11 +154,7 @@ class IncludeExcerptPattern(markdown.inlinepatterns.Pattern):
       lexer = guess_lexer_for_filename(include_path, file_text)
     except ClassNotFound:
       # e.g., ClassNotFound: no lexer for filename u'BUILD' found
-      if 'BUILD' in include_path:
-        lexer = PythonLexer()
-      else:
-        lexer = TextLexer()  # the boring plain-text lexer
-
+      lexer = PythonLexer() if 'BUILD' in include_path else TextLexer()
     html_snippet = highlight(include_text,
                              lexer,
                              HtmlFormatter(cssclass='codehilite'))
@@ -180,7 +176,7 @@ class IncludeExcerptExtension(markdown.Extension):
 def page_to_html_path(page):
   "Given a page target, return partial path for an output .html"
   source_path = page.sources_relative_to_buildroot()[0]
-  return os.path.splitext(source_path)[0] + ".html"
+  return f"{os.path.splitext(source_path)[0]}.html"
 
 
 class MarkdownToHtml(Task):
@@ -215,7 +211,7 @@ class MarkdownToHtml(Task):
     css_path = os.path.join(outdir, 'css', 'codehighlight.css')
     css = emit_codehighlight_css(css_path, self.code_style)
     if css:
-      self.context.log.info('Emitted %s' % css)
+      self.context.log.info(f'Emitted {css}')
 
     def is_page(target):
       return isinstance(target, Page)
@@ -248,7 +244,7 @@ class MarkdownToHtml(Task):
             config,
             css=css
           )
-          self.context.log.info('Processed %s to %s' % (page.source, html_path))
+          self.context.log.info(f'Processed {page.source} to {html_path}')
           relpath = os.path.relpath(html_path, outdir)
           genmap.add(key, outdir, [relpath])
           return html_path
@@ -289,8 +285,9 @@ class MarkdownToHtml(Task):
         page = self.context.build_graph.get_target(address)
         anchor = match.group(2) or ''
         if not page:
-          raise TaskError('Invalid markdown link to pants target: "%s". ' % match.group(1) +
-                          'Is your page missing a dependency on this target?')
+          raise TaskError(
+              f'Invalid markdown link to pants target: "{match.group(1)}". Is your page missing a dependency on this target?'
+          )
         alias, url = url_builder(page, config=get_config(page))
         return alias, url + anchor
       else:
@@ -300,10 +297,9 @@ class MarkdownToHtml(Task):
       components = label.split('|', 1)
       if len(components) == 1:
         return parse_url(label.strip())
-      else:
-        alias, link = components
-        _, url = parse_url(link.strip())
-        return alias, url
+      alias, link = components
+      _, url = parse_url(link.strip())
+      return alias, url
 
     wikilinks = WikilinksExtension(build_url)
 

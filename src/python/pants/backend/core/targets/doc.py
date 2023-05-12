@@ -98,7 +98,8 @@ class Page(Target):
     super(Page, self).__init__(address=address, payload=payload, **kwargs)
 
     if provides and not isinstance(provides[0], WikiArtifact):
-      raise ValueError('Page must provide a wiki_artifact. Found instead: %s' % provides)
+      raise ValueError(
+          f'Page must provide a wiki_artifact. Found instead: {provides}')
 
   @property
   def source(self):
@@ -107,17 +108,13 @@ class Page(Target):
 
   @property
   def traversable_dependency_specs(self):
-    for spec in super(Page, self).traversable_specs:
-      yield spec
-    for resource_spec in self._resource_specs:
-      yield resource_spec
+    yield from super(Page, self).traversable_specs
+    yield from self._resource_specs
 
   @property
   def traversable_specs(self):
-    for spec in super(Page, self).traversable_specs:
-      yield spec
-    for spec in self.payload.links:
-      yield spec
+    yield from super(Page, self).traversable_specs
+    yield from self.payload.links
 
   @property
   def provides(self):

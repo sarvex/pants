@@ -35,7 +35,7 @@ class ProtobufParseTest(unittest.TestCase):
         proto_parser.parse()
         self.assertEqual('com.pants.examples.temperature', proto_parser.package)
         self.assertEqual(set(), proto_parser.enums)
-        self.assertEqual(set(['Temperature']), proto_parser.messages)
+        self.assertEqual({'Temperature'}, proto_parser.messages)
         self.assertEqual(set(), proto_parser.services)
         self.assertEqual('Temperatures', proto_parser.outer_class_name)
 
@@ -53,8 +53,8 @@ class ProtobufParseTest(unittest.TestCase):
         proto_parse_no_whitespace =  ProtobufParse(fd.name, filename)
         proto_parse_no_whitespace.parse()
         self.assertEqual('com.twitter.lean', proto_parse_no_whitespace.package)
-        self.assertEqual(set(['Jake']), proto_parse_no_whitespace.enums)
-        self.assertEqual(set(['joe_bob']), proto_parse_no_whitespace.messages)
+        self.assertEqual({'Jake'}, proto_parse_no_whitespace.enums)
+        self.assertEqual({'joe_bob'}, proto_parse_no_whitespace.messages)
         self.assertEqual(set(), proto_parse_no_whitespace.services)
         self.assertEqual('JackSprattNoWhitespace', proto_parse_no_whitespace.outer_class_name)
 
@@ -73,15 +73,14 @@ class ProtobufParseTest(unittest.TestCase):
         proto_parse_with_whitespace =  ProtobufParse(fd.name, filename)
         proto_parse_with_whitespace.parse()
         self.assertEqual('com.twitter.lean', proto_parse_with_whitespace.package)
-        self.assertEqual(set(['Jake']), proto_parse_with_whitespace.enums)
-        self.assertEqual(set(['joe_bob']), proto_parse_with_whitespace.messages)
+        self.assertEqual({'Jake'}, proto_parse_with_whitespace.enums)
+        self.assertEqual({'joe_bob'}, proto_parse_with_whitespace.messages)
         self.assertEqual('JackSpratt',proto_parse_with_whitespace.outer_class_name)
 
   def test_update_type_list(self):
     match = MESSAGE_PARSER.match('message Temperature {')
 
-    expected_value = set()
-    expected_value.add('Temperature')
+    expected_value = {'Temperature'}
     actual_value = set()
     update_type_list(match, 0, actual_value)
     self.assertEqual(expected_value, actual_value)
@@ -120,7 +119,7 @@ class ProtobufParseTest(unittest.TestCase):
         fd.close()
         proto_parse = ProtobufParse(fd.name, filename)
         proto_parse.parse()
-        self.assertEqual(set(['Foo']), proto_parse.extends)
+        self.assertEqual({'Foo'}, proto_parse.extends)
 
   # TODO(Eric Ayers) The following tests won't pass because the .proto parse is not reliable.
   #  https://github.com/pantsbuild/pants/issues/96
@@ -140,8 +139,8 @@ class ProtobufParseTest(unittest.TestCase):
         proto_parse =  ProtobufParse(fd.name, filename)
         proto_parse.parse()
         self.assertEqual('com.pants.protos', proto_parse.package)
-        self.assertEqual(set(['Bar']), proto_parse.enums)
-        self.assertEqual(set(['Foo']), proto_parse.messages)
+        self.assertEqual({'Bar'}, proto_parse.enums)
+        self.assertEqual({'Foo'}, proto_parse.messages)
         self.assertEqual(set(), proto_parse.services)
         self.assertEqual('InnerClassNoNewline', proto_parse.outer_class_name)
 
@@ -156,8 +155,8 @@ class ProtobufParseTest(unittest.TestCase):
         proto_parse =  ProtobufParse(fd.name, filename)
         proto_parse.parse()
         self.assertEqual('com.pants.protos', proto_parse.package)
-        self.assertEqual(set(['Bar']), proto_parse.enums)
-        self.assertEqual(set(['Foo', 'FooBar']), proto_parse.messages)
+        self.assertEqual({'Bar'}, proto_parse.enums)
+        self.assertEqual({'Foo', 'FooBar'}, proto_parse.messages)
         self.assertEqual(set(), proto_parse.services)
         self.assertEqual('NoNewlineAtAll1', proto_parse.outer_class_name)
 
@@ -172,8 +171,8 @@ class ProtobufParseTest(unittest.TestCase):
         proto_parse =  ProtobufParse(fd.name, filename)
         proto_parse.parse()
         self.assertEqual('com.pants.protos', proto_parse.package)
-        self.assertEqual(set(['Bar']), proto_parse.enums)
-        self.assertEqual(set(['Foo', 'FooBar']), proto_parse.messages)
+        self.assertEqual({'Bar'}, proto_parse.enums)
+        self.assertEqual({'Foo', 'FooBar'}, proto_parse.messages)
         self.assertEqual(set(), proto_parse.services)
         self.assertEqual('NoNewlineAtAll2', proto_parse.outer_class_name)
 
@@ -188,7 +187,7 @@ class ProtobufParseTest(unittest.TestCase):
         proto_parse.parse()
         self.assertEqual('com.example.foo.bar', proto_parse.package)
         self.assertEqual(set(), proto_parse.enums)
-        self.assertEqual(set(['Foo',]), proto_parse.messages)
+        self.assertEqual({'Foo'}, proto_parse.messages)
         self.assertEqual(set(), proto_parse.services)
         self.assertEqual('NoNewlineAtAll3', proto_parse.outer_class_name)
 
@@ -215,7 +214,7 @@ class ProtobufParseTest(unittest.TestCase):
         proto_parse =  ProtobufParse(fd.name, filename)
         proto_parse.parse()
         self.assertEqual('com.example.foo.bar', proto_parse.package)
-        self.assertEqual(set(['Bar']), proto_parse.enums)
-        self.assertEqual(set(['Foo', 'FooBar']), proto_parse.messages)
+        self.assertEqual({'Bar'}, proto_parse.enums)
+        self.assertEqual({'Foo', 'FooBar'}, proto_parse.messages)
         self.assertEqual(set(), proto_parse.services)
         self.assertEqual('CrazyWhitespace', proto_parse.outer_class_name)

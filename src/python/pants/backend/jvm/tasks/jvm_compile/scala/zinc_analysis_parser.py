@@ -91,27 +91,27 @@ class ZincAnalysisParser(AnalysisParser):
   def _verify_version(self, lines_iter):
     version_line = lines_iter.next()
     if version_line != ZincAnalysis.FORMAT_VERSION_LINE:
-      raise ParseError('Unrecognized version line: ' + version_line)
+      raise ParseError(f'Unrecognized version line: {version_line}')
 
   _num_items_re = re.compile(r'(\d+) items\n')
 
   def _parse_num_items(self, lines_iter):
     """Parse a line of the form '<num> items' and returns <num> as an int."""
     line = lines_iter.next()
-    matchobj = self._num_items_re.match(line)
-    if not matchobj:
-      raise ParseError('Expected: "<num> items". Found: "%s"' % line)
-    return int(matchobj.group(1))
+    if matchobj := self._num_items_re.match(line):
+      return int(matchobj.group(1))
+    else:
+      raise ParseError(f'Expected: "<num> items". Found: "{line}"')
 
   def _parse_section(self, lines_iter, expected_header=None):
     """Parse a single section."""
     if expected_header:
       line = lines_iter.next()
       if expected_header + ':\n' != line:
-        raise ParseError('Expected: "%s:". Found: "%s"' % (expected_header, line))
+        raise ParseError(f'Expected: "{expected_header}:". Found: "{line}"')
     n = self._parse_num_items(lines_iter)
     relation = defaultdict(list)  # Values are lists, to accommodate relations.
-    for i in xrange(n):
+    for _ in xrange(n):
       k, _, v = lines_iter.next().partition(' -> ')
       if len(v) == 1:  # Value on its own line.
         v = lines_iter.next()

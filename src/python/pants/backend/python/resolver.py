@@ -43,11 +43,9 @@ class PantsObtainer(CachingObtainer):
           crawler=self._crawler,
           fetchers=[Fetcher([requirement.repository])],
           translators=self._translator)
-      for package in obtainer.iter(requirement):
-        yield package
+      yield from obtainer.iter(requirement)
     else:
-      for package in super(PantsObtainer, self).iter(requirement):
-        yield package
+      yield from super(PantsObtainer, self).iter(requirement)
 
 
 def resolve_multi(config,
@@ -73,10 +71,12 @@ def resolve_multi(config,
                  "flask>=0.2" if a matching distribution is available on disk.  Defaults
                  to 3600.
   """
-  distributions = dict()
+  distributions = {}
   interpreter = interpreter or PythonInterpreter.get()
   if not isinstance(interpreter, PythonInterpreter):
-    raise TypeError('Expected interpreter to be a PythonInterpreter, got %s' % type(interpreter))
+    raise TypeError(
+        f'Expected interpreter to be a PythonInterpreter, got {type(interpreter)}'
+    )
 
   install_cache = PythonSetup(config).scratch_dir('install_cache', default_name='eggs')
   platforms = get_platforms(platforms or config.getlist('python-setup', 'platforms', ['current']))

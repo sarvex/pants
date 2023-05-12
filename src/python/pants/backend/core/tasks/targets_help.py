@@ -45,7 +45,7 @@ class TargetsHelp(ConsoleTask):
 
     :param sym: string like 'java_library' or 'artifact'.'''
     d = assemble_buildsyms(build_file_parser=self.context.build_file_parser)
-    if not sym in d:
+    if sym not in d:
       return ['\nNo such symbol: {0}\n'.format(sym)]
     template = resource_string(__name__, os.path.join(self._templates_dir,
                                                       'cli_details.mustache'))

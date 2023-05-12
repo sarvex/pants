@@ -89,7 +89,8 @@ class HtmlReporter(Reporter):
              'initially_open': is_test or not (is_bootstrap or is_tool or is_multitool),
              'is_tool': is_tool,
              'is_multitool': is_multitool }
-    args.update({ 'collapsible': lambda x: self._renderer.render_callable('collapsible', x, args) })
+    args['collapsible'] = lambda x: self._renderer.render_callable(
+        'collapsible', x, args)
 
     # Render the workunit's div.
     s = self._renderer.render_name('workunit_start', args)
@@ -154,12 +155,17 @@ class HtmlReporter(Reporter):
       msg_elements = []
       for cache_name, stat in artifact_cache_stats.stats_per_cache.items():
         msg_elements.extend([
-          cache_name + ' artifact cache: ',
-          # Explicitly set the detail ids, so their displayed/hidden state survives a refresh.
-          fix_detail_id(items_to_report_element(stat.hit_targets, 'hit'), 'cache-hit-details'),
-          ', ',
-          fix_detail_id(items_to_report_element(stat.miss_targets, 'miss'), 'cache-miss-details'),
-          '.'
+            f'{cache_name} artifact cache: ',
+            fix_detail_id(
+                items_to_report_element(stat.hit_targets, 'hit'),
+                'cache-hit-details',
+            ),
+            ', ',
+            fix_detail_id(
+                items_to_report_element(stat.miss_targets, 'miss'),
+                'cache-miss-details',
+            ),
+            '.',
         ])
       if not msg_elements:
         msg_elements = ['No artifact cache use.']
@@ -173,8 +179,8 @@ class HtmlReporter(Reporter):
 
   def handle_output(self, workunit, label, s):
     """Implementation of Reporter callback."""
-    if os.path.exists(self._html_dir):  # Make sure we're not immediately after a clean-all.
-      path = os.path.join(self._html_dir, '%s.%s' % (workunit.id, label))
+    if os.path.exists(self._html_dir):# Make sure we're not immediately after a clean-all.
+      path = os.path.join(self._html_dir, f'{workunit.id}.{label}')
       output_files = self._output_files[workunit.id]
       if path not in output_files:
         f = open(path, 'w')
@@ -194,8 +200,7 @@ class HtmlReporter(Reporter):
   }
   def do_handle_log(self, workunit, level, *msg_elements):
     """Implementation of Reporter callback."""
-    content = '<span class="%s">%s</span>' % \
-              (HtmlReporter._log_level_css_map[level], self._render_message(*msg_elements))
+    content = f'<span class="{HtmlReporter._log_level_css_map[level]}">{self._render_message(*msg_elements)}</span>'
 
     # Generate some javascript that appends the content to the workunit's div.
     args = {
@@ -232,16 +237,16 @@ class HtmlReporter(Reporter):
       defaults = ('', None, None, False)
       # Map assumes None for missing values, so this will pick the default for those.
       (text, detail, detail_id, detail_initially_visible) = \
-        map(lambda x, y: x or y, element, defaults)
+          map(lambda x, y: x or y, element, defaults)
       element_args = {'text': self._htmlify_text(text) }
       if detail is not None:
         detail_id = detail_id or uuid.uuid4()
         detail_ids.append(detail_id)
-        element_args.update({
-          'detail': self._htmlify_text(detail),
-          'detail_initially_visible': detail_initially_visible,
-          'detail-id': detail_id
-        })
+        element_args |= {
+            'detail': self._htmlify_text(detail),
+            'detail_initially_visible': detail_initially_visible,
+            'detail-id': detail_id,
+        }
       elements.append(element_args)
     args = { 'elements': elements,
              'all-detail-ids': detail_ids }
@@ -281,7 +286,7 @@ class HtmlReporter(Reporter):
               ret.append('</span>')
               span_depth -= 1
           else:
-            ret.append('<span class="ansi-%s">' % code)
+            ret.append(f'<span class="ansi-{code}">')
             span_depth += 1
     while span_depth > 0:
       ret.append('</span>')

@@ -62,9 +62,12 @@ class AntlrGenTest(NailgunTaskTestBase):
       """Take a path relative to task_outdir, and make it relative to the build_root"""
       # TODO: is there a way to do this directly with rglobs?
       return os.path.relpath(os.path.join(task_outdir, p), self.build_root)
+
     actual_sources = [re_relativize(s) for s in Fileset.rglobs('*.java', root=task_outdir)]
     self.assertEquals(set(syn_target.sources_relative_to_buildroot()), set(actual_sources))
     # and that the synthetic target has a valid sourceroot
     for source in syn_target.sources_relative_to_source_root():
-      self.assertTrue(os.path.isfile(os.path.join(syn_sourceroot, source)),
-                      "%s is not the sourceroot for %s" % (syn_sourceroot, source))
+      self.assertTrue(
+          os.path.isfile(os.path.join(syn_sourceroot, source)),
+          f"{syn_sourceroot} is not the sourceroot for {source}",
+      )

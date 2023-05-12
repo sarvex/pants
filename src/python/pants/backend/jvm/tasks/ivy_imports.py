@@ -44,7 +44,7 @@ class IvyImports(NailgunTask):
     round_manager.require_data('jvm_build_tools_classpath_callbacks')
 
   def _str_jar(self, jar):
-    return 'jar' + str((jar.org, jar.name, jar.rev))
+    return f'jar{(jar.org, jar.name, jar.rev)}'
 
   def execute(self):
     def nice_target_name(t):

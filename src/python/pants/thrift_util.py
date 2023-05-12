@@ -27,21 +27,21 @@ def find_includes(basedirs, source, log=None):
 
   includes = set()
   with open(source, 'r') as thrift:
-    for line in thrift.readlines():
-      match = INCLUDE_PARSER.match(line)
-      if match:
+    for line in thrift:
+      if match := INCLUDE_PARSER.match(line):
         capture = match.group(1)
         added = False
         for basedir in all_basedirs:
           include = os.path.join(basedir, capture)
           if os.path.exists(include):
             if log:
-              log.debug('%s has include %s' % (source, include))
+              log.debug(f'{source} has include {include}')
             includes.add(include)
             added = True
         if not added:
-          raise ValueError("%s included in %s not found in bases %s"
-                           % (include, source, all_basedirs))
+          raise ValueError(
+              f"{include} included in {source} not found in bases {all_basedirs}"
+          )
   return includes
 
 

@@ -165,9 +165,11 @@ class FetcherTest(mox.MoxTestBase):
                          timeout_secs=60)
 
   def expect_download(self, path_or_fd=None):
-    downloaded = ''
-    for chunk in self.expect_get('http://1', chunk_size_bytes=13, timeout_secs=13, listener=False):
-      downloaded += chunk
+    downloaded = ''.join(
+        self.expect_get('http://1',
+                        chunk_size_bytes=13,
+                        timeout_secs=13,
+                        listener=False))
     self.response.close()
 
     self.mox.ReplayAll()

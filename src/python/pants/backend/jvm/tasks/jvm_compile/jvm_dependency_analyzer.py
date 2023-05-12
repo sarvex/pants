@@ -88,17 +88,16 @@ class JvmDependencyAnalyzer(object):
         def get_transitive_jars_by_ref(ref1, visited=None):
           if ref1 in deps_by_ref_memo:
             return deps_by_ref_memo[ref1]
-          else:
-            visited = visited or set()
-            if ref1 in visited:
-              return set()  # Ivy allows circular deps.
-            visited.add(ref1)
-            jars = set()
-            jars.update(ivyinfo.modules_by_ref[ref1].artifacts)
-            for dep in ivyinfo.deps_by_caller.get(ref1, []):
-              jars.update(get_transitive_jars_by_ref(dep, visited))
-            deps_by_ref_memo[ref1] = jars
-            return jars
+          visited = visited or set()
+          if ref1 in visited:
+            return set()  # Ivy allows circular deps.
+          visited.add(ref1)
+          jars = set()
+          jars.update(ivyinfo.modules_by_ref[ref1].artifacts)
+          for dep in ivyinfo.deps_by_caller.get(ref1, []):
+            jars.update(get_transitive_jars_by_ref(dep, visited))
+          deps_by_ref_memo[ref1] = jars
+          return jars
 
         target_key = (ref.org, ref.name)
         if target_key in jarlibs_by_id:
@@ -148,52 +147,55 @@ class JvmDependencyAnalyzer(object):
 
     See docstring for _compute_missing_deps for details.
     """
-    if self._check_missing_deps or self._check_missing_direct_deps or self._check_unnecessary_deps:
-      missing_file_deps, missing_tgt_deps, missing_direct_tgt_deps = \
+    if (not self._check_missing_deps and not self._check_missing_direct_deps
+        and not self._check_unnecessary_deps):
+      return
+    missing_file_deps, missing_tgt_deps, missing_direct_tgt_deps = \
         self._compute_missing_deps(srcs, actual_deps)
 
-      buildroot = get_buildroot()
-      def shorten(path):  # Make the output easier to read.
-        for prefix in [buildroot, self._context.ivy_home]:
-          if path.startswith(prefix):
-            return os.path.relpath(path, prefix)
-        return path
+    buildroot = get_buildroot()
+    def shorten(path):  # Make the output easier to read.
+      for prefix in [buildroot, self._context.ivy_home]:
+        if path.startswith(prefix):
+          return os.path.relpath(path, prefix)
+      return path
 
-      def filter_whitelisted(missing_deps):
-        # Removing any targets that exist in the whitelist from the list of dependency issues.
-        return [(tgt_pair, evidence) for (tgt_pair, evidence) in missing_deps
-                            if tgt_pair[0].address.reference() not in self._target_whitelist]
+    def filter_whitelisted(missing_deps):
+      # Removing any targets that exist in the whitelist from the list of dependency issues.
+      return [(tgt_pair, evidence) for (tgt_pair, evidence) in missing_deps
+                          if tgt_pair[0].address.reference() not in self._target_whitelist]
 
-      missing_tgt_deps = filter_whitelisted(missing_tgt_deps)
+    missing_tgt_deps = filter_whitelisted(missing_tgt_deps)
 
-      if self._check_missing_deps and (missing_file_deps or missing_tgt_deps):
-        for (tgt_pair, evidence) in missing_tgt_deps:
-          evidence_str = '\n'.join(['    %s uses %s' % (shorten(e[0]), shorten(e[1]))
-                                    for e in evidence])
-          self._context.log.error(
-              'Missing BUILD dependency %s -> %s because:\n%s'
-              % (tgt_pair[0].address.reference(), tgt_pair[1].address.reference(), evidence_str))
-        for (src_tgt, dep) in missing_file_deps:
-          self._context.log.error('Missing BUILD dependency %s -> %s'
-                                  % (src_tgt.address.reference(), shorten(dep)))
-        if self._check_missing_deps == 'fatal':
-          raise TaskError('Missing deps.')
+    if self._check_missing_deps and (missing_file_deps or missing_tgt_deps):
+      for (tgt_pair, evidence) in missing_tgt_deps:
+        evidence_str = '\n'.join(
+            [f'    {shorten(e[0])} uses {shorten(e[1])}' for e in evidence])
+        self._context.log.error(
+            'Missing BUILD dependency %s -> %s because:\n%s'
+            % (tgt_pair[0].address.reference(), tgt_pair[1].address.reference(), evidence_str))
+      for (src_tgt, dep) in missing_file_deps:
+        self._context.log.error(
+            f'Missing BUILD dependency {src_tgt.address.reference()} -> {shorten(dep)}'
+        )
+      if self._check_missing_deps == 'fatal':
+        raise TaskError('Missing deps.')
 
 
-      missing_direct_tgt_deps = filter_whitelisted(missing_direct_tgt_deps)
+    missing_direct_tgt_deps = filter_whitelisted(missing_direct_tgt_deps)
 
-      if self._check_missing_direct_deps and missing_direct_tgt_deps:
+    if self._check_missing_direct_deps and missing_direct_tgt_deps:
 
-        for (tgt_pair, evidence) in missing_direct_tgt_deps:
-          evidence_str = '\n'.join(['    %s uses %s' % (shorten(e[0]), shorten(e[1]))
-                                    for e in evidence])
-          self._context.log.warn('Missing direct BUILD dependency %s -> %s because:\n%s' %
-                                  (tgt_pair[0].address, tgt_pair[1].address, evidence_str))
-        if self._check_missing_direct_deps == 'fatal':
-          raise TaskError('Missing direct deps.')
+      for (tgt_pair, evidence) in missing_direct_tgt_deps:
+        evidence_str = '\n'.join(
+            [f'    {shorten(e[0])} uses {shorten(e[1])}' for e in evidence])
+        self._context.log.warn('Missing direct BUILD dependency %s -> %s because:\n%s' %
+                                (tgt_pair[0].address, tgt_pair[1].address, evidence_str))
+      if self._check_missing_direct_deps == 'fatal':
+        raise TaskError('Missing direct deps.')
 
-      if self._check_unnecessary_deps:
-        raise TaskError('Unnecessary dep warnings not implemented yet.')
+    if self._check_unnecessary_deps:
+      raise TaskError('Unnecessary dep warnings not implemented yet.')
 
   def _compute_missing_deps(self, srcs, actual_deps):
     """Computes deps that are used by the compiler but not specified in a BUILD file.
@@ -275,7 +277,7 @@ class JvmDependencyAnalyzer(object):
                 missing_direct_tgt_deps_map[(src_tgt, canonical_actual_dep_tgt)].append(
                     (src, actual_dep))
         else:
-          raise TaskError('Requested dep info for unknown source file: %s' % src)
+          raise TaskError(f'Requested dep info for unknown source file: {src}')
 
     return (list(missing_file_deps),
             missing_tgt_deps_map.items(),

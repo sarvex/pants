@@ -35,7 +35,7 @@ class ZincAnalysisTest(unittest.TestCase):
       # Extract analysis files from tarball.
       analysis_tarball = os.path.join(os.path.dirname(__file__), 'testdata', 'analysis.tar.bz2')
       analysis_dir = os.path.join(tmpdir, 'orig')
-      print('Extracting %s to %s' % (analysis_tarball, analysis_dir))
+      print(f'Extracting {analysis_tarball} to {analysis_dir}')
       os.mkdir(analysis_dir)
       with contextlib.closing(tarfile.open(analysis_tarball, 'r:bz2')) as tar:
         tar.extractall(analysis_dir)
@@ -70,12 +70,16 @@ class ZincAnalysisTest(unittest.TestCase):
 
       # Write merged analysis to file.
       merged_analysis_path = os.path.join(tmpdir, 'analysis.merged')
-      self._time(lambda: merged_analysis.write_to_path(merged_analysis_path),
-                 'Wrote merged analysis to %s' % merged_analysis_path)
+      self._time(
+          lambda: merged_analysis.write_to_path(merged_analysis_path),
+          f'Wrote merged analysis to {merged_analysis_path}',
+      )
 
       # Read merged analysis from file.
-      merged_analysis2 = self._time(lambda: parser.parse_from_path(merged_analysis_path),
-                                    'Read merged analysis from %s' % merged_analysis_path)
+      merged_analysis2 = self._time(
+          lambda: parser.parse_from_path(merged_analysis_path),
+          f'Read merged analysis from {merged_analysis_path}',
+      )
 
       # Split the merged analysis back to individual analyses.
       sources_per_analysis = [a.stamps.sources.keys() for a in analyses]

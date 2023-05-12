@@ -27,7 +27,7 @@ class Executor(AbstractClass):
   def _scrub_args(classpath, main, jvm_options, args, cwd):
     classpath = maybe_list(classpath)
     if not isinstance(main, Compatibility.string) or not main:
-      raise ValueError('A non-empty main classname is required, given: %s' % main)
+      raise ValueError(f'A non-empty main classname is required, given: {main}')
     jvm_options = maybe_list(jvm_options or ())
     args = maybe_list(args or ())
     return classpath, main, jvm_options, args, cwd
@@ -66,7 +66,7 @@ class Executor(AbstractClass):
     """
     if distribution:
       if not isinstance(distribution, Distribution):
-        raise ValueError('A valid distribution is required, given: %s' % distribution)
+        raise ValueError(f'A valid distribution is required, given: {distribution}')
       distribution.validate()
     else:
       distribution = Distribution.cached()
@@ -152,8 +152,7 @@ class SubprocessExecutor(Executor):
   @contextmanager
   def _maybe_scrubbed_env(cls):
     for env_var in cls._SCRUBBED_ENV:
-      value = os.getenv(env_var)
-      if value:
+      if value := os.getenv(env_var):
         log.warn('Scrubbing {env_var}={value}'.format(env_var=env_var, value=value))
     with environment_as(**cls._SCRUBBED_ENV):
       yield

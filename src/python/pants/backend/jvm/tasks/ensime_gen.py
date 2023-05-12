@@ -75,7 +75,7 @@ class EnsimeGen(IdeGen):
 
     def create_sourcepath(base_id, sources):
       def normalize_path_pattern(path):
-        return '%s/' % path if not path.endswith('/') else path
+        return f'{path}/' if not path.endswith('/') else path
 
       includes = [normalize_path_pattern(src_set.path) for src_set in sources if src_set.path]
       excludes = []
@@ -94,6 +94,7 @@ class EnsimeGen(IdeGen):
     def add_jarlibs(classpath_entries):
       for classpath_entry in classpath_entries:
         libs.append((classpath_entry.jar, classpath_entry.source_jar))
+
     add_jarlibs(project.internal_jars)
     add_jarlibs(project.external_jars)
 

@@ -57,16 +57,16 @@ class DuplicateDetectorTest(TaskTestBase):
     with jars() as jars:
       test_jar, jar_with_duplicates, jar_without_duplicates, jar_with_unicode = jars
       self.path_with_duplicates = {
-          'com/twitter/Test.class': set([test_jar]),
-          'com/twitter/commons/Duplicate.class': set([test_jar, jar_with_duplicates]),
-          'org/apache/Unique.class': set([jar_with_duplicates]),
-          'cucumber/api/java/zh_cn/假如.class' : set([jar_with_unicode]),
+          'com/twitter/Test.class': {test_jar},
+          'com/twitter/commons/Duplicate.class': {test_jar, jar_with_duplicates},
+          'org/apache/Unique.class': {jar_with_duplicates},
+          'cucumber/api/java/zh_cn/假如.class': {jar_with_unicode},
       }
       self.path_without_duplicates = {
-          'com/twitter/Test.class': set([test_jar]),
-          'com/twitter/commons/Duplicate.class': set([test_jar]),
-          'org/apache/Unique.class': set([jar_without_duplicates]),
-          'cucumber/api/java/zh_cn/假如.class' : set([jar_with_unicode]),
+          'com/twitter/Test.class': {test_jar},
+          'com/twitter/commons/Duplicate.class': {test_jar},
+          'org/apache/Unique.class': {jar_without_duplicates},
+          'cucumber/api/java/zh_cn/假如.class': {jar_with_unicode},
       }
 
   def tearDown(self):

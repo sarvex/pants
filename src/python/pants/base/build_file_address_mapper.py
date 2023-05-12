@@ -64,12 +64,10 @@ class BuildFileAddressMapper(object):
 
     :raises: A helpful error message listing possible correct target addresses.
     """
-    def path_parts(build):  # Gets a tuple of directory, filename.
+    def path_parts(build):# Gets a tuple of directory, filename.
       build = str(build)
       slash = build.rfind('/')
-      if slash < 0:
-        return '', build
-      return build[:slash], build[slash+1:]
+      return ('', build) if slash < 0 else (build[:slash], build[slash+1:])
 
     def are_siblings(a, b):  # Are the targets in the same directory?
       return path_parts(a)[0] == path_parts(b)[0]
@@ -113,11 +111,10 @@ class BuildFileAddressMapper(object):
     :returns: Addressable from a build file specified by address
     """
     address_map = self.address_map_from_spec_path(address.spec_path)
-    if address not in address_map:
-      build_file = BuildFile.from_cache(self.root_dir, address.spec_path, must_exist=False)
-      self._raise_incorrect_address_error(build_file, address.target_name, address_map)
-    else:
+    if address in address_map:
       return address_map[address]
+    build_file = BuildFile.from_cache(self.root_dir, address.spec_path, must_exist=False)
+    self._raise_incorrect_address_error(build_file, address.target_name, address_map)
 
   def resolve_spec(self, spec):
     """Converts a spec to an address and maps it using `resolve`"""

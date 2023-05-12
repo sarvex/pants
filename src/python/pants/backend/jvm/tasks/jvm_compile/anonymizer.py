@@ -138,25 +138,24 @@ class Anonymizer(object):
     lower = token.lower()
     translation = self._translations.get(lower)
     if translation is None:
-      if not self._unused_words:
-        if self._strict:
-          raise Exception('Ran out of words to translate to.')
-        else:
-          self._words_needed += 1
-          translation = lower
-      else:
+      if self._unused_words:
         translation = self._unused_words.pop()
+      elif self._strict:
+        raise Exception('Ran out of words to translate to.')
+      else:
+        self._words_needed += 1
+        translation = lower
       self._add_translation(lower, translation)
     # Use the same capitalization as the original word.
-    if token[0].isupper():
-      return translation.capitalize()
-    else:
-      return translation
+    return translation.capitalize() if token[0].isupper() else translation
 
   def _add_translation(self, frm, to):
     if frm in self._translations:
-      raise Exception('Word already has translation: %s -> %s' % (frm, self._translations[frm]))
+      raise Exception(
+          f'Word already has translation: {frm} -> {self._translations[frm]}')
     if to in self._reverse_translations:
-      raise Exception('Translation target already used: %s -> %s' % (self._reverse_translations[to], to))
+      raise Exception(
+          f'Translation target already used: {self._reverse_translations[to]} -> {to}'
+      )
     self._translations[frm] = to
     self._reverse_translations[to] = frm

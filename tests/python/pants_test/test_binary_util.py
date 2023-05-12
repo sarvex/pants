@@ -38,7 +38,7 @@ class BinaryUtilTest(BaseTest):
       self._map = read_map
 
     def __call__(self, key):
-      if not key in self._map:
+      if key not in self._map:
         raise IOError("404: Virtual URL '{key}' does not exist.".format(key=key))
       value = self._map[key]
       return BinaryUtilTest.LambdaReader(lambda: value)
@@ -60,16 +60,8 @@ class BinaryUtilTest(BaseTest):
     def clean_config(txt):
       return '\n'.join((line.strip() for line in txt.split('\n')))
 
-    if legacy:
-      legacy = '\npants_support_baseurl: {url}'.format(url=legacy)
-    else:
-      legacy = ''
-
-    if urls:
-      urls = '\npants_support_baseurls = {urls}'.format(urls=urls)
-    else:
-      urls = ''
-
+    legacy = '\npants_support_baseurl: {url}'.format(url=legacy) if legacy else ''
+    urls = '\npants_support_baseurls = {urls}'.format(urls=urls) if urls else ''
     return self.config(overrides=clean_config('[DEFAULT]{urls}{legacy}'.format(urls=urls,
                                                                                 legacy=legacy)))
 
@@ -92,10 +84,10 @@ class BinaryUtilTest(BaseTest):
     for key in binaries:
       base_path, version, name = binaries[key]
       with util.select_binary_stream(base_path,
-                                     version,
-                                     name,
-                                     url_opener=reader) as stream:
-        self.assertEqual(stream(), 'SEEN ' + key.upper())
+                                         version,
+                                         name,
+                                         url_opener=reader) as stream:
+        self.assertEqual(stream(), f'SEEN {key.upper()}')
         unseen.remove(stream())
     self.assertEqual(0, len(unseen)) # Make sure we've seen all the SEENs.
 

@@ -78,7 +78,7 @@ class BuildFileAliasesTest(unittest.TestCase):
 
     self.assertEqual('original doc', curried.__doc__)
     self.assertTrue('curry_me' in curried.__name__,
-                    'Unhelpful __name__: ' + curried.__name__)
+                    f'Unhelpful __name__: {curried.__name__}')
     self.assertEqual((42, 'fred'), func('fred'))
 
   def test_merge(self):

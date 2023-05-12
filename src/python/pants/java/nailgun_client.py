@@ -79,7 +79,7 @@ class NailgunSession(object):
     for arg in args:
       self._send_chunk('A', arg)
     for k, v in environment.items():
-      self._send_chunk('E', '%s=%s' % (k, v))
+      self._send_chunk('E', f'{k}={v}')
     self._send_chunk('D', workdir)
     self._send_chunk('C', main_class)
 
@@ -106,7 +106,7 @@ class NailgunSession(object):
         self._err.flush()
         return int(payload)
       else:
-        raise self.ProtocolError('Received unexpected chunk %s -> %s' % (command, payload))
+        raise self.ProtocolError(f'Received unexpected chunk {command} -> {payload}')
 
   def _read_chunk(self, buff):
     while len(buff) < self.HEADER_LENGTH:

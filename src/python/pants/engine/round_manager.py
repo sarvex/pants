@@ -55,7 +55,7 @@ class RoundManager(object):
     if self._producer_infos_by_product_type is None:
       self._producer_infos_by_product_type = self._index_products()
 
-    producer_infos = self._producer_infos_by_product_type[product_type]
-    if not producer_infos:
+    if producer_infos := self._producer_infos_by_product_type[product_type]:
+      return producer_infos
+    else:
       raise self.MissingProductError("No producers registered for '{0}'".format(product_type))
-    return producer_infos

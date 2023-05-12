@@ -65,9 +65,9 @@ class JvmBinaryTask(JarTask):
 
     with self.context.new_workunit(name='create-monolithic-jar'):
       with self.open_jar(path,
-                         jar_rules=binary.deploy_jar_rules,
-                         overwrite=True,
-                         compressed=True) as jar:
+                             jar_rules=binary.deploy_jar_rules,
+                             overwrite=True,
+                             compressed=True) as jar:
 
         with self.context.new_workunit(name='add-internal-classes'):
           self._jar_builder.add_target(jar, binary, recursive=True)
@@ -76,7 +76,7 @@ class JvmBinaryTask(JarTask):
           with self.context.new_workunit(name='add-dependency-jars'):
             for basedir, external_jar in self.list_external_jar_dependencies(binary):
               external_jar_path = os.path.join(basedir, external_jar)
-              self.context.log.debug('  dumping %s' % external_jar_path)
+              self.context.log.debug(f'  dumping {external_jar_path}')
               jar.writejar(external_jar_path)
 
         yield jar
@@ -88,8 +88,7 @@ class JvmBinaryTask(JarTask):
     externaljars = OrderedDict()
     visited = set()
     for conf in confs:
-      mapped = jardepmap.get((binary, conf))
-      if mapped:
+      if mapped := jardepmap.get((binary, conf)):
         for basedir, jars in mapped.items():
           for externaljar in jars:
             if (basedir, externaljar) not in visited:
@@ -127,7 +126,7 @@ class JvmBinaryTask(JarTask):
             if (basedir, externaljar) not in excludes:
               externaljars.add((basedir, externaljar))
             else:
-              self.context.log.debug('Excluding %s from binary' % externaljar)
+              self.context.log.debug(f'Excluding {externaljar} from binary')
 
     binary.walk(add_jars)
     return externaljars

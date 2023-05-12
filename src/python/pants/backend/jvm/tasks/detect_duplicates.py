@@ -44,7 +44,10 @@ class DuplicateDetector(JvmBinaryTask):
     super(DuplicateDetector, self).__init__(*args, **kwargs)
     self._fail_fast = self.get_options().fail_fast
     excludes = self.get_options().excludes
-    self._excludes = set([x.lower() for exclude in excludes for x in exclude.split(',')])
+    self._excludes = {
+        x.lower()
+        for exclude in excludes for x in exclude.split(',')
+    }
     self._max_dups = int(self.get_options().max_dups)
 
   def prepare(self, round_manager):
@@ -76,7 +79,7 @@ class DuplicateDetector(JvmBinaryTask):
     if len(conflicts_by_artifacts) > 0:
       self._log_conflicts(conflicts_by_artifacts, binary_target)
       if self._fail_fast:
-        raise TaskError('Failing build for target %s.' % binary_target)
+        raise TaskError(f'Failing build for target {binary_target}.')
       return True
     return False
 
@@ -85,8 +88,7 @@ class DuplicateDetector(JvmBinaryTask):
     classes_by_target = self.context.products.get_data('classes_by_target')
     resources_by_target = self.context.products.get_data('resources_by_target')
 
-    target_products = classes_by_target.get(binary_target)
-    if target_products:  # Will be None if binary_target has no sources.
+    if target_products := classes_by_target.get(binary_target):
       for _, classes in target_products.rel_paths():
         for cls in classes:
           artifacts_by_file_name[cls].add(binary_target)
@@ -101,9 +103,9 @@ class DuplicateDetector(JvmBinaryTask):
 
   def _get_external_dependencies(self, binary_target):
     artifacts_by_file_name = defaultdict(set)
-    for basedir, externaljar in  self.list_external_jar_dependencies(binary_target):
+    for basedir, externaljar in self.list_external_jar_dependencies(binary_target):
       external_dep = os.path.join(basedir, externaljar)
-      self.context.log.debug('  scanning %s' % external_dep)
+      self.context.log.debug(f'  scanning {external_dep}')
       with closing(ZipFile(external_dep)) as dep_zip:
         for qualified_file_name in dep_zip.namelist():
           # Zip entry names can come in any encoding and in practice we find some jars that have
@@ -130,10 +132,11 @@ class DuplicateDetector(JvmBinaryTask):
     for artifacts, duplicate_files in conflicts_by_artifacts.items():
       if len(artifacts) < 2: continue
       self.context.log.warn(
-        'Duplicate classes and/or resources detected in artifacts: %s' % str(artifacts))
+          f'Duplicate classes and/or resources detected in artifacts: {str(artifacts)}'
+      )
       dup_list = list(duplicate_files)
       for duplicate_file in dup_list[:self._max_dups]:
-        self.context.log.warn('     %s' % duplicate_file)
+        self.context.log.warn(f'     {duplicate_file}')
       if len(dup_list) > self._max_dups:
         self.context.log.warn('     ... {remaining} more ...'
                               .format(remaining=(len(dup_list)-self._max_dups)))

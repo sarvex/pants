@@ -60,10 +60,7 @@ def abbreviate_target_ids(arr):
         if not subseq:
           # Empty subsequence should always lose.
           return add_value
-        if result_cmp_fn(skip_value, add_value):
-          return skip_value
-        return add_value
-
+        return skip_value if result_cmp_fn(skip_value, add_value) else add_value
       return None
 
     val = subseq_map_rec(list(arr), tuple())
@@ -90,7 +87,7 @@ def abbreviate_target_ids(arr):
   for split_key in split_keys:
     min_subseq = subseq_map(split_key, result_cmp_fn=return_min_subseqs)
     if not min_subseq:
-      raise Exception("No min subseq found for %s: %s" % (str(split_key), str(min_subseq)))
+      raise Exception(f"No min subseq found for {str(split_key)}: {str(min_subseq)}")
     min_subseq_by_key['.'.join(str(segment) for segment in split_key)] = '.'.join(min_subseq)
 
   return min_subseq_by_key

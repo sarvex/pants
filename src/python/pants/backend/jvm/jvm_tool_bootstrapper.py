@@ -26,10 +26,10 @@ class JvmToolBootstrapper(object):
     Returns a no-arg callable. Invoking it returns a list of paths.
     """
     callback_product_map = self._products.get_data('jvm_build_tools_classpath_callbacks') or {}
-    callback = callback_product_map.get(key)
-    if not callback:
-      raise TaskError('No bootstrap callback registered for %s' % key)
-    return lambda: callback(executor=executor)
+    if callback := callback_product_map.get(key):
+      return lambda: callback(executor=executor)
+    else:
+      raise TaskError(f'No bootstrap callback registered for {key}')
 
   def register_jvm_tool_from_config(self, key, config, ini_section, ini_key, default):
     tools = config.getlist(ini_section, ini_key, default)
@@ -42,18 +42,18 @@ class JvmToolBootstrapper(object):
     Note: Not reentrant. We assume that all registration is done in the main thread.
     """
     if not tools:
-      raise ValueError("No implementations were provided for tool '%s'" % key)
+      raise ValueError(f"No implementations were provided for tool '{key}'")
     self._products.require_data('jvm_build_tools_classpath_callbacks')
     tool_product_map = self._products.get_data('jvm_build_tools') or {}
     tool_product_config_map = self._products.get_data('jvm_build_tools_config') or {}
     existing = tool_product_map.get(key)
     # It's OK to re-register with the same value, but not to change the value.
-    if existing is not None:
-      if existing != tools:
-        raise TaskError('Attemping to change tools under %s from %s to %s.'
-                        % (key, existing, tools))
-    else:
+    if existing is None:
       tool_product_map[key] = tools
       tool_product_config_map[key] = {'ini_section': ini_section, 'ini_key': ini_key}
       self._products.safe_create_data('jvm_build_tools', lambda: tool_product_map)
       self._products.safe_create_data('jvm_build_tools_config', lambda: tool_product_config_map)
+
+    elif existing != tools:
+      raise TaskError(
+          f'Attemping to change tools under {key} from {existing} to {tools}.')

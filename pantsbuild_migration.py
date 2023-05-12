@@ -15,25 +15,143 @@ SRC_ROOT = os.path.join(PANTS_ROOT, 'src', 'python')
 TESTS_ROOT = os.path.join(PANTS_ROOT, 'tests', 'python')
 
 
-KNOWN_STD_LIBS = set(["abc", "anydbm", "argparse", "array", "asynchat", "asyncore", "atexit", "base64",
-                      "BaseHTTPServer", "bisect", "bz2", "calendar", "cgitb", "cmd", "codecs",
-                      "collections", "commands", "compileall", "ConfigParser", "contextlib", "Cookie",
-                      "copy", "cPickle", "cProfile", "cStringIO", "csv", "datetime", "dbhash", "dbm",
-                      "decimal", "difflib", "dircache", "dis", "doctest", "dumbdbm", "EasyDialogs",
-                      "errno", "exceptions", "filecmp", "fileinput", "fnmatch", "fractions",
-                      "functools", "gc", "gdbm", "getopt", "getpass", "gettext", "glob", "grp", "gzip",
-                      "hashlib", "heapq", "hmac", "imaplib", "imp", "inspect", "itertools", "json",
-                      "linecache", "locale", "logging", "mailbox", "math", "mhlib", "mmap",
-                      "multiprocessing", "operator", "optparse", "os", "pdb", "pickle", "pipes",
-                      "pkgutil", "platform", "plistlib", "pprint", "profile", "pstats", "pwd", "pyclbr",
-                      "pydoc", "Queue", "random", "re", "readline", "resource", "rlcompleter",
-                      "robotparser", "sched", "select", "shelve", "shlex", "shutil", "signal",
-                      "SimpleXMLRPCServer", "site", "sitecustomize", "smtpd", "smtplib", "socket",
-                      "SocketServer", "sqlite3", "string", "StringIO", "struct", "subprocess", "sys",
-                      "sysconfig", "tabnanny", "tarfile", "tempfile", "textwrap", "threading", "time",
-                      "timeit", "trace", "traceback", "unittest", "urllib", "urllib2", "urlparse",
-                      "usercustomize", "uuid", "warnings", "weakref", "webbrowser", "whichdb", "xml",
-                      "xmlrpclib", "zipfile", "zipimport", "zlib", 'builtins', '__builtin__'])
+KNOWN_STD_LIBS = {
+    "abc",
+    "anydbm",
+    "argparse",
+    "array",
+    "asynchat",
+    "asyncore",
+    "atexit",
+    "base64",
+    "BaseHTTPServer",
+    "bisect",
+    "bz2",
+    "calendar",
+    "cgitb",
+    "cmd",
+    "codecs",
+    "collections",
+    "commands",
+    "compileall",
+    "ConfigParser",
+    "contextlib",
+    "Cookie",
+    "copy",
+    "cPickle",
+    "cProfile",
+    "cStringIO",
+    "csv",
+    "datetime",
+    "dbhash",
+    "dbm",
+    "decimal",
+    "difflib",
+    "dircache",
+    "dis",
+    "doctest",
+    "dumbdbm",
+    "EasyDialogs",
+    "errno",
+    "exceptions",
+    "filecmp",
+    "fileinput",
+    "fnmatch",
+    "fractions",
+    "functools",
+    "gc",
+    "gdbm",
+    "getopt",
+    "getpass",
+    "gettext",
+    "glob",
+    "grp",
+    "gzip",
+    "hashlib",
+    "heapq",
+    "hmac",
+    "imaplib",
+    "imp",
+    "inspect",
+    "itertools",
+    "json",
+    "linecache",
+    "locale",
+    "logging",
+    "mailbox",
+    "math",
+    "mhlib",
+    "mmap",
+    "multiprocessing",
+    "operator",
+    "optparse",
+    "os",
+    "pdb",
+    "pickle",
+    "pipes",
+    "pkgutil",
+    "platform",
+    "plistlib",
+    "pprint",
+    "profile",
+    "pstats",
+    "pwd",
+    "pyclbr",
+    "pydoc",
+    "Queue",
+    "random",
+    "re",
+    "readline",
+    "resource",
+    "rlcompleter",
+    "robotparser",
+    "sched",
+    "select",
+    "shelve",
+    "shlex",
+    "shutil",
+    "signal",
+    "SimpleXMLRPCServer",
+    "site",
+    "sitecustomize",
+    "smtpd",
+    "smtplib",
+    "socket",
+    "SocketServer",
+    "sqlite3",
+    "string",
+    "StringIO",
+    "struct",
+    "subprocess",
+    "sys",
+    "sysconfig",
+    "tabnanny",
+    "tarfile",
+    "tempfile",
+    "textwrap",
+    "threading",
+    "time",
+    "timeit",
+    "trace",
+    "traceback",
+    "unittest",
+    "urllib",
+    "urllib2",
+    "urlparse",
+    "usercustomize",
+    "uuid",
+    "warnings",
+    "weakref",
+    "webbrowser",
+    "whichdb",
+    "xml",
+    "xmlrpclib",
+    "zipfile",
+    "zipimport",
+    "zlib",
+    'builtins',
+    '__builtin__',
+}
 
 OLD_PANTS_PACKAGE = 'twitter.pants'
 NEW_PANTS_PACKAGE = 'pants'
@@ -66,10 +184,10 @@ class Import(object):
     return self._symbol
 
   def sort_key(self):
-    return 'AAA' + self._symbol
+    return f'AAA{self._symbol}'
 
   def __str__(self):
-    return 'import %s' % self._symbol
+    return f'import {self._symbol}'
 
 
 class FromImport(object):
@@ -83,10 +201,10 @@ class FromImport(object):
     return self._from
 
   def sort_key(self):
-    return 'ZZZ' + self._from
+    return f'ZZZ{self._from}'
 
   def __str__(self):
-    return 'from %s import %s' % (self._from, ', '.join(sorted(self._symbols)))
+    return f"from {self._from} import {', '.join(sorted(self._symbols))}"
 
 
 class BuildFile(object):
@@ -113,10 +231,11 @@ class BuildFile(object):
       return line.replace('twitter/pants', 'pants').replace('twitter.pants', 'pants').replace(
         'src/python/twitter/common/', '3rdparty/python:twitter.common.'
       )
+
     self._body = map(_translate, self._old_lines[p:])
     # Remove any trailing empty lines.
     while not self._body[-1]:
-      self._body = self._body[0:-1]
+      self._body = self._body[:-1]
 
   def save(self):
     with open(self._path, 'w') as outfile:
@@ -139,7 +258,7 @@ class PantsSourceFile(object):
     elif absdir.startswith(TESTS_ROOT):
       root = TESTS_ROOT
     else:
-      raise Exception('File not in src or tests roots: %s' % path)
+      raise Exception(f'File not in src or tests roots: {path}')
     self._package = os.path.relpath(absdir, root).replace(os.path.sep, '.')
     self._old_lines = []
     self._stdlib_imports = []
@@ -193,12 +312,13 @@ class PantsSourceFile(object):
         if imp == '.':
           return self._package
         elif imp.startswith('.'):
-          return '%s.' % self._package + imp[1:]
+          return f'{self._package}.{imp[1:]}'
         else:
           return imp
+
       m = FROM_IMPORT_RE.match(line)
       if m:
-        if not m.group(1) == '__future__':
+        if m.group(1) != '__future__':
           add_import(FromImport(absify(m.group(1)), m.group(2).split(',')))
         return True
       else:
@@ -217,7 +337,7 @@ class PantsSourceFile(object):
         if line.startswith('from ') and '(' in line:
           line_parts = [line]
           next_line = ''
-          while not ')' in next_line:
+          while ')' not in next_line:
             next_line = lines_iter.next().strip()
             line_parts.append(next_line)
           line = ' '.join(line_parts)
@@ -226,11 +346,12 @@ class PantsSourceFile(object):
 
     def _translate(line):
       return line.replace('twitter/pants', 'pants').replace('twitter.pants', 'pants')
+
     self._body = map(_translate, [''] + line_parts + list(lines_iter))
 
     # Remove any trailing empty lines.
     while self._body and not self._body[-1]:
-      self._body = self._body[0:-1]
+      self._body = self._body[:-1]
 
   def save(self):
     sorted_stdlib_imports = map(str, sorted(self._stdlib_imports, key=lambda x: x.sort_key()))
@@ -253,15 +374,15 @@ class PantsSourceFile(object):
 def handle_path(path):
   if os.path.isfile(path):
     if path.endswith('.py') and not path.endswith('pantsbuild_migration.py'):
-      print('PROCESSING: %s' % path)
+      print(f'PROCESSING: {path}')
       srcfile = PantsSourceFile(path)
       srcfile.process()
     elif os.path.basename(path).startswith('BUILD'):
-      print('PROCESSING: %s' % path)
+      print(f'PROCESSING: {path}')
       srcfile = BuildFile(path)
       srcfile.process()
     elif path.endswith('.rst') or path.endswith('.sh') or path.endswith('pants.bootstrap'):
-      print('PROCESSING: %s' % path)
+      print(f'PROCESSING: {path}')
       with open(path, 'r') as infile:
         content = infile.read()
       new_content = content.replace('twitter.pants', 'pants').replace('twitter/pants', 'pants')

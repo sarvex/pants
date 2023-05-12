@@ -24,8 +24,8 @@ class PythonThriftBuilder(CodeGenerator):
   """Code Generator a  Python code from thrift IDL files."""
   class UnknownPlatformException(CodeGenerator.Error):
     def __init__(self, platform):
-      super(PythonThriftBuilder.UnknownPlatformException, self).__init__(
-          'Unknown platform: %s!' % str(platform))
+      super(PythonThriftBuilder.UnknownPlatformException,
+            self).__init__(f'Unknown platform: {str(platform)}!')
 
   def __init__(self, target, root_dir, config, target_suffix=None):
     super(PythonThriftBuilder, self).__init__(target, root_dir, config, target_suffix=target_suffix)
@@ -67,7 +67,8 @@ class PythonThriftBuilder(CodeGenerator):
 
     for src in copied_sources:
       if not self._run_thrift(src):
-        raise PythonThriftBuilder.CodeGenerationException("Could not generate .py from %s!" % src)
+        raise PythonThriftBuilder.CodeGenerationException(
+            f"Could not generate .py from {src}!")
 
   def _run_thrift(self, source):
     args = [
@@ -97,11 +98,11 @@ class PythonThriftBuilder(CodeGenerator):
     For example, 'from' will be converted to 'from_'.
     """
     rewrites = []
-    renames = dict((kw, '%s_' % kw) for kw in keyword.kwlist)
+    renames = {kw: f'{kw}_' for kw in keyword.kwlist}
     token_regex = re.compile(r'(\W)(%s)(\W)' % '|'.join(renames.keys()), re.MULTILINE)
 
     def token_replace(match):
-      return '%s%s%s' % (match.group(1), renames[match.group(2)], match.group(3))
+      return f'{match.group(1)}{renames[match.group(2)]}{match.group(3)}'
 
     def replace_tokens(contents):
       return token_regex.sub(token_replace, contents)
@@ -138,9 +139,6 @@ class PythonThriftBuilder(CodeGenerator):
         with open(init_py_abspath, 'wb') as f:
           f.write(b"__import__('pkg_resources').declare_namespace(__name__)")
         self.created_namespace_packages.add(module_path)
-      else:
-        # non-empty __init__, this is a leaf package, usually with ttypes and constants, leave as-is
-        pass
-
     if not self.created_packages:
-      raise self.CodeGenerationException('No Thrift structures declared in %s!' % self.target)
+      raise self.CodeGenerationException(
+          f'No Thrift structures declared in {self.target}!')

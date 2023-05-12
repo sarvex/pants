@@ -21,8 +21,8 @@ class ContextTest(BaseTest):
     d = self.make_target('d', dependencies=[c, a])
     e = self.make_target('e', dependencies=[d])
     context = self.context(target_roots=[a, b, c, d, e])
-    dependees = context.dependents(lambda t: t in set([e, c]))
-    self.assertEquals(set([c]), dependees.pop(d))
+    dependees = context.dependents(lambda t: t in {e, c})
+    self.assertEquals({c}, dependees.pop(d))
     self.assertEquals(0, len(dependees))
 
   def test_targets_order(self):

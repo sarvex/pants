@@ -80,7 +80,7 @@ class Git(Scm):
     origin_push_line = [line.split()[1] for line in git_output.splitlines()
                                         if 'origin' in line and '(push)' in line]
     if len(origin_push_line) != 1:
-      raise Scm.LocalException('Unable to find origin remote amongst: ' + git_output)
+      raise Scm.LocalException(f'Unable to find origin remote amongst: {git_output}')
     return origin_push_line[0]
 
   @property
@@ -104,7 +104,7 @@ class Git(Scm):
     if from_commit:
       # Grab the diff from the merge-base to HEAD using ... syntax.  This ensures we have just
       # the changes that have occurred on the current branch.
-      committed_cmd = ['diff', '--name-only', '%s...HEAD' % from_commit] + rel_suffix
+      committed_cmd = ['diff', '--name-only', f'{from_commit}...HEAD'] + rel_suffix
       committed_changes = self._check_output(committed_cmd,
                                              raise_type=Scm.LocalException)
       files.update(committed_changes.split())
@@ -116,12 +116,13 @@ class Git(Scm):
     # git will report changed files relative to the worktree: re-relativize to relative_to
     def fix_git_relative_path(worktree_path):
       return os.path.relpath(os.path.join(self._worktree, worktree_path), relative_to)
-    return set(fix_git_relative_path(f) for f in files)
+
+    return {fix_git_relative_path(f) for f in files}
 
   def changelog(self, from_commit=None, files=None):
     args = ['whatchanged', '--stat', '--find-renames', '--find-copies']
     if from_commit:
-      args.append('%s..HEAD' % from_commit)
+      args.append(f'{from_commit}..HEAD')
     if files:
       args.append('--')
       args.extend(files)
@@ -157,12 +158,17 @@ class Git(Scm):
     # We use -a here instead of --annotate to maintain maximum git compatibility.
     # --annotate was only introduced in 1.7.8 via:
     #   https://github.com/git/git/commit/c97eff5a95d57a9561b7c7429e7fcc5d0e3a7f5d
-    self._check_call(['tag', '-a', '--message=%s' % (message or ''), name],
-                     raise_type=Scm.LocalException)
-    self.push('refs/tags/%s' % name)
+    self._check_call(
+        ['tag', '-a', f"--message={message or ''}", name],
+        raise_type=Scm.LocalException,
+    )
+    self.push(f'refs/tags/{name}')
 
   def commit(self, message):
-    self._check_call(['commit', '--all', '--message=%s' % message], raise_type=Scm.LocalException)
+    self._check_call(
+        ['commit', '--all', f'--message={message}'],
+        raise_type=Scm.LocalException,
+    )
 
   def commit_date(self, commit_reference):
     return self._check_output(['log', '-1', '--pretty=tformat:%ci', commit_reference],
@@ -184,8 +190,8 @@ class Git(Scm):
                                    raise_type=Scm.LocalException)
         return value.strip()
 
-      self._remote = self._remote or get_local_config('branch.%s.remote' % branch)
-      self._branch = self._branch or get_local_config('branch.%s.merge' % branch)
+      self._remote = self._remote or get_local_config(f'branch.{branch}.remote')
+      self._branch = self._branch or get_local_config(f'branch.{branch}.merge')
     return self._remote, self._branch
 
   def _check_call(self, args, failure_msg=None, raise_type=None):
@@ -204,7 +210,11 @@ class Git(Scm):
     return self._cleanse(out)
 
   def _create_git_cmdline(self, args):
-    return [self._gitcmd, '--git-dir=%s' % self._gitdir, '--work-tree=%s' % self._worktree] + args
+    return [
+        self._gitcmd,
+        f'--git-dir={self._gitdir}',
+        f'--work-tree={self._worktree}',
+    ] + args
 
   def _log_call(self, cmd):
-    self._log.debug('Executing: %s' % ' '.join(cmd))
+    self._log.debug(f"Executing: {' '.join(cmd)}")

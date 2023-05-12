@@ -20,8 +20,7 @@ class AddressableCallProxy(object):
 
   def __call__(self, *args, **kwargs):
     addressable = self._addressable_type(*args, **kwargs)
-    addressable_name = addressable.addressable_name
-    if addressable_name:
+    if addressable_name := addressable.addressable_name:
       address = BuildFileAddress(self._build_file, addressable_name)
       self._registration_callback(address, addressable)
     return addressable

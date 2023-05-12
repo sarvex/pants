@@ -26,8 +26,6 @@ def hash_file(path, digest=None):
   """
   digest = digest or hashlib.sha1()
   with open(path, 'rb') as fd:
-    s = fd.read(8192)
-    while s:
+    while s := fd.read(8192):
       digest.update(s)
-      s = fd.read(8192)
   return digest.hexdigest()

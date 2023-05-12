@@ -51,39 +51,32 @@ class ProtobufParse(object):
     java_package = None
 
     for line in lines:
-      match = DEFAULT_PACKAGE_PARSER.match(line)
-      if match:
+      if match := DEFAULT_PACKAGE_PARSER.match(line):
         self.package = match.group(1)
-        continue
+      elif match := OPTION_PARSER.match(line):
+        name = match.group(1)
+        value = match.group(2).strip('"')
+        if name == 'java_package':
+          java_package = value
+        elif name == 'java_outer_classname':
+          self.outer_class_name = value
+        elif name == 'java_multiple_files':
+          self.multiple_files = (value == 'true')
       else:
-        match = OPTION_PARSER.match(line)
-        if match:
-          name = match.group(1)
-          value = match.group(2).strip('"')
-          if 'java_package' == name:
-            java_package = value
-          elif 'java_outer_classname' == name:
-            self.outer_class_name = value
-          elif 'java_multiple_files' == name:
-            self.multiple_files = (value == 'true')
-        else:
-          uline = line.decode('utf-8').strip()
-          type_depth += uline.count('{') - uline.count('}')
-          match = SERVICE_PARSER.match(line)
-          update_type_list(match, type_depth, self.services)
-          if not match:
-            match = ENUM_PARSER.match(line)
-            if match:
-              update_type_list(match, type_depth, self.enums)
-              continue
-            match = MESSAGE_PARSER.match(line)
-            if match:
-              update_type_list(match, type_depth, self.messages)
-              continue
-            match = EXTEND_PARSER.match(line)
-            if match:
-              update_type_list(match, type_depth, self.extends)
-              continue
+        uline = line.decode('utf-8').strip()
+        type_depth += uline.count('{') - uline.count('}')
+        match = SERVICE_PARSER.match(line)
+        update_type_list(match, type_depth, self.services)
+        if not match:
+          if match := ENUM_PARSER.match(line):
+            update_type_list(match, type_depth, self.enums)
+            continue
+          if match := MESSAGE_PARSER.match(line):
+            update_type_list(match, type_depth, self.messages)
+            continue
+          if match := EXTEND_PARSER.match(line):
+            update_type_list(match, type_depth, self.extends)
+            continue
     if java_package:
       self.package = java_package
 

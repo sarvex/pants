@@ -49,10 +49,10 @@ def get_scm():
     if worktree and os.path.isdir(worktree):
       git = Git(worktree=worktree)
       try:
-        log.info('Detected git repository at %s on branch %s' % (worktree, git.branch_name))
+        log.info(f'Detected git repository at {worktree} on branch {git.branch_name}')
         set_scm(git)
       except git.LocalException as e:
-        log.info('Failed to load git repository at %s: %s' % (worktree, e))
+        log.info(f'Failed to load git repository at {worktree}: {e}')
   return _SCM
 
 
@@ -60,6 +60,6 @@ def set_scm(scm):
   """Sets the pants Scm."""
   if scm is not None:
     if not isinstance(scm, Scm):
-      raise ValueError('The scm must be an instance of Scm, given %s' % scm)
+      raise ValueError(f'The scm must be an instance of Scm, given {scm}')
     global _SCM
     _SCM = scm

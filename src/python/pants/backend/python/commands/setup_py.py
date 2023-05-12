@@ -78,8 +78,8 @@ class SetupPy(Command):
       for prv in providers:
         depmap[prv].add(dep)
         if dep in parents:
-          raise TargetDefinitionException(root_target,
-             '%s and %s combined have a cycle!' % (root_target, dep))
+          raise TargetDefinitionException(
+              root_target, f'{root_target} and {dep} combined have a cycle!')
         parents.add(dep)
         cls._construct_provider_map(root_target, dep, parents, providers, depmap)
         parents.remove(dep)
@@ -172,7 +172,8 @@ class SetupPy(Command):
         break
     else:
       raise TypeError(
-          'write_generated_sources could not find suitable code generator for %s' % type(target))
+          f'write_generated_sources could not find suitable code generator for {type(target)}'
+      )
 
     builder = builder_cls(target, root, config)
     builder.generate()
@@ -225,14 +226,14 @@ class SetupPy(Command):
           # TODO(wickman) Consider changing this to a full-on error as it
           # could indicate bad BUILD hygiene.
           # raise cls.UndefinedSource('%s is source but does not belong to a package!' % filename)
-          print('WARNING!  %s is source but does not belong to a package!' % real_filename)
+          print(f'WARNING!  {real_filename} is source but does not belong to a package!')
         else:
           continue
       submodule = cls.nearest_subpackage(module, packages)
       if submodule == module:
         resources[submodule].add(filename)
       else:
-        assert module.startswith(submodule + '.')
+        assert module.startswith(f'{submodule}.')
         relative_module = module[len(submodule) + 1:]
         relative_filename = os.path.join(relative_module.replace('.', os.path.sep), filename)
         resources[submodule].add(relative_filename)
@@ -273,7 +274,7 @@ class SetupPy(Command):
     self.target = self.build_graph.get_target_from_spec(self.args[0])
 
     if self.target is None:
-      self.error('%s is not a valid target!' % self.args[0])
+      self.error(f'{self.args[0]} is not a valid target!')
 
     if not self.target.provides:
       self.error('Target must provide an artifact.')
@@ -332,8 +333,11 @@ class SetupPy(Command):
       setup_keywords.update(
           package_dir=package_dir,
           packages=list(sorted(packages)),
-          package_data=dict((str(package), list(map(str, rs)))
-                            for (package, rs) in resources.items()))
+          package_data={
+              str(package): list(map(str, rs))
+              for (package, rs) in resources.items()
+          },
+      )
 
     setup_keywords['install_requires'] = sorted(list(self.install_requires(root_target)))
 
@@ -343,12 +347,12 @@ class SetupPy(Command):
       if 'console_scripts' not in setup_keywords['entry_points']:
         setup_keywords['entry_points']['console_scripts'] = []
       setup_keywords['entry_points']['console_scripts'].append(
-          '%s = %s' % (binary_name, entry_point))
+          f'{binary_name} = {entry_point}')
 
     # From http://stackoverflow.com/a/13105359
     def convert(input):
       if isinstance(input, dict):
-        out = dict()
+        out = {}
         for key, value in input.items():
           out[convert(key)] = convert(value)
         return out
@@ -389,20 +393,20 @@ class SetupPy(Command):
     chroot = Chroot(dist_dir, name=target.provides.name)
     self.write_contents(target, chroot)
     self.write_setup(target, chroot)
-    target_base = '%s-%s' % (target.provides.name, target.provides.version)
+    target_base = f'{target.provides.name}-{target.provides.version}'
     setup_dir = os.path.join(dist_dir, target_base)
     safe_rmtree(setup_dir)
     shutil.move(chroot.path(), setup_dir)
 
     if not self.old_options.run:
-      print('Running packager against %s' % setup_dir)
+      print(f'Running packager against {setup_dir}')
       setup_runner = Packager(setup_dir)
       tgz_name = os.path.basename(setup_runner.sdist())
-      print('Writing %s' % os.path.join(dist_dir, tgz_name))
+      print(f'Writing {os.path.join(dist_dir, tgz_name)}')
       shutil.move(setup_runner.sdist(), os.path.join(dist_dir, tgz_name))
       safe_rmtree(setup_dir)
     else:
-      print('Running %s against %s' % (self.old_options.run, setup_dir))
+      print(f'Running {self.old_options.run} against {setup_dir}')
       setup_runner = SetupPyRunner(setup_dir, self.old_options.run)
       setup_runner.run()
 

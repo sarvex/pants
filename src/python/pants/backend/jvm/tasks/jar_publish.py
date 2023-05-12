@@ -66,10 +66,7 @@ class PushDb(object):
       self.fingerprint = fingerprint
 
     def version(self):
-      if self.named_is_latest:
-        return self.named_ver
-      else:
-        return self.sem_ver
+      return self.named_ver if self.named_is_latest else self.sem_ver
 
     def with_sem_ver(self, sem_ver):
       """Returns a clone of this entry with the given sem_ver marked as the latest."""
@@ -84,9 +81,7 @@ class PushDb(object):
       return PushDb.Entry(self.sem_ver, self.named_ver, self.named_is_latest, sha, fingerprint)
 
     def __repr__(self):
-      return '<%s, %s, %s, %s, %s, %s>' % (
-        self.__class__.__name__, self.sem_ver, self.named_ver, self.named_is_latest,
-        self.sha, self.fingerprint)
+      return f'<{self.__class__.__name__}, {self.sem_ver}, {self.named_ver}, {self.named_is_latest}, {self.sha}, {self.fingerprint}>'
 
   def __init__(self, props=None):
     self._props = props or OrderedDict()
@@ -270,7 +265,7 @@ class IvyWriter(DependencyWriter):
 
 
 def coordinate(org, name, rev=None):
-  return '%s#%s;%s' % (org, name, rev) if rev else '%s#%s' % (org, name)
+  return f'{org}#{name};{rev}' if rev else f'{org}#{name}'
 
 
 def jar_coordinate(jar, rev=None):
@@ -292,8 +287,7 @@ def target_internal_dependencies(target):
     if isinstance(dep, Jarable):
       yield dep
     else:
-      for childdep in target_internal_dependencies(dep):
-        yield childdep
+      yield from target_internal_dependencies(dep)
 
 
 class JarPublish(JarTask, ScmPublish):
@@ -433,7 +427,7 @@ class JarPublish(JarTask, ScmPublish):
           credentials = next(iter(self.context.resolve(auth)))
           user = credentials.username(data['resolver'])
           password = credentials.password(data['resolver'])
-          self.context.log.debug('Found auth for repo=%s user=%s' % (repo, user))
+          self.context.log.debug(f'Found auth for repo={repo} user={user}')
           self.repos[repo]['username'] = user
           self.repos[repo]['password'] = password
       self.commit = self.get_options().commit
@@ -466,7 +460,7 @@ class JarPublish(JarTask, ScmPublish):
             raise TaskError('%s => %s?:\n    %s' % (address, prompt,
                                                     '\n    '.join(str(a) for a in siblings)))
           if not target.is_exported:
-            raise TaskError('%s is not an exported target' % coordinate)
+            raise TaskError(f'{coordinate} is not an exported target')
           return target.provides.org, target.provides.name
         except (BuildFile.BuildFileError, BuildFileParser.BuildFileParserError, AddressLookupError) as e:
           raise TaskError('{message}\n  Problem with BUILD file  at {coordinate}'
@@ -484,10 +478,10 @@ class JarPublish(JarTask, ScmPublish):
             # overrides imply semantic versioning
             rev = Semver.parse(rev)
           except ValueError as e:
-            raise TaskError('Invalid version %s: %s' % (rev, e))
+            raise TaskError(f'Invalid version {rev}: {e}')
           return parse_jarcoordinate(coordinate), rev
         except ValueError:
-          raise TaskError('Invalid override: %s' % override)
+          raise TaskError(f'Invalid override: {override}')
 
       self.overrides.update(parse_override(o) for o in self.get_options().override)
 
@@ -514,9 +508,7 @@ class JarPublish(JarTask, ScmPublish):
       isatty = False
     if not isatty:
       return True
-    push = raw_input('Publish %s with revision %s ? [y|N] ' % (
-      coord, version
-    ))
+    push = raw_input(f'Publish {coord} with revision {version} ? [y|N] ')
     print('\n')
     return push.strip().lower() == 'y'
 
@@ -545,11 +537,11 @@ class JarPublish(JarTask, ScmPublish):
     user = repo.get('username')
     password = repo.get('password')
     if user and password:
-      jvm_args.append('-Dlogin=%s' % user)
-      jvm_args.append('-Dpassword=%s' % password)
+      jvm_args.append(f'-Dlogin={user}')
+      jvm_args.append(f'-Dpassword={password}')
     else:
-      raise TaskError('Unable to publish to %s. %s' %
-                      (repo.get('resolver'), repo.get('help', '')))
+      raise TaskError(
+          f"Unable to publish to {repo.get('resolver')}. {repo.get('help', '')}")
     return jvm_args
 
   def publish(self, ivyxml_path, jar, entry, repo, published):
@@ -566,14 +558,20 @@ class JarPublish(JarTask, ScmPublish):
 
     ivysettings = self.generate_ivysettings(ivy, published, publish_local=path)
     args = [
-      '-settings', ivysettings,
-      '-ivy', ivyxml_path,
-      '-deliverto', '%s/[organisation]/[module]/ivy-[revision].xml' % self.workdir,
-      '-publish', resolver,
-      '-publishpattern', '%s/[organisation]/[module]/'
-                         '[artifact]-[revision](-[classifier]).[ext]' % self.workdir,
-      '-revision', entry.version().version(),
-      '-m2compatible',
+        '-settings',
+        ivysettings,
+        '-ivy',
+        ivyxml_path,
+        '-deliverto',
+        f'{self.workdir}/[organisation]/[module]/ivy-[revision].xml',
+        '-publish',
+        resolver,
+        '-publishpattern',
+        '%s/[organisation]/[module]/'
+        '[artifact]-[revision](-[classifier]).[ext]' % self.workdir,
+        '-revision',
+        entry.version().version(),
+        '-m2compatible',
     ]
 
     if LogOptions.stderr_log_level() == logging.DEBUG:
@@ -717,9 +715,9 @@ class JarPublish(JarTask, ScmPublish):
       return stage_artifact(tgt, jar, version, changelog, confs, extra_confs=extra_confs)
 
     if self.overrides:
-      print('Publishing with revision overrides:\n  %s' % '\n  '.join(
-        '%s=%s' % (coordinate(org, name), rev) for (org, name), rev in self.overrides.items()
-      ))
+      print(('Publishing with revision overrides:\n  %s' %
+             '\n  '.join(f'{coordinate(org, name)}={rev}'
+                         for (org, name), rev in self.overrides.items())))
 
     head_sha = self.scm.commit_id
 
@@ -747,9 +745,9 @@ class JarPublish(JarTask, ScmPublish):
           sem_ver = sem_ver.make_snapshot()
 
         if sem_ver <= oldentry.sem_ver:
-          raise TaskError('Requested version %s must be greater than the current version %s' % (
-            sem_ver, oldentry.sem_ver
-          ))
+          raise TaskError(
+              f'Requested version {sem_ver} must be greater than the current version {oldentry.sem_ver}'
+          )
         newentry = oldentry.with_sem_ver(sem_ver)
 
       newfingerprint = self.fingerprint(target, fingerprint_internal)
@@ -765,10 +763,9 @@ class JarPublish(JarTask, ScmPublish):
         print('No changes for {0}'.format(pushdb_coordinate(jar, oldentry)))
         stage_artifacts(target, jar, oldentry.version().version(), changelog)
       elif skip:
-        print('Skipping %s to resume at %s' % (
-          jar_coordinate(jar, (newentry.version() if self.force else oldentry.version()).version()),
-          coordinate(self.restart_at[0], self.restart_at[1])
-        ))
+        print(
+            f'Skipping {jar_coordinate(jar, (newentry.version() if self.force else oldentry.version()).version())} to resume at {coordinate(self.restart_at[0], self.restart_at[1])}'
+        )
         stage_artifacts(target, jar, oldentry.version().version(), changelog)
       else:
         if not self.dryrun:
@@ -824,7 +821,7 @@ class JarPublish(JarTask, ScmPublish):
                   self.scm.refresh(leave_clean=True)
                 except Scm.LocalException as local_exception:
                   exc = traceback.format_exc(scm_exception)
-                  self.context.log.debug("SCM exception while pushing: %s" % exc)
+                  self.context.log.debug(f"SCM exception while pushing: {exc}")
                   raise local_exception
 
             else:
@@ -834,12 +831,12 @@ class JarPublish(JarTask, ScmPublish):
                          message='Publish of %(coordinate)s initiated by %(user)s %(cause)s' % args)
 
   def artifact_path(self, jar, version, name=None, suffix='', extension='jar', artifact_ext=''):
-    return os.path.join(self.workdir, jar.org, jar.name + artifact_ext,
-                        '%s%s-%s%s.%s' % ((name or jar.name),
-                                          artifact_ext if name != 'ivy' else '',
-                                          version,
-                                          suffix,
-                                          extension))
+    return os.path.join(
+        self.workdir,
+        jar.org,
+        jar.name + artifact_ext,
+        f"{name or jar.name}{artifact_ext if name != 'ivy' else ''}-{version}{suffix}.{extension}",
+    )
 
   def check_targets(self, targets):
     invalid = defaultdict(lambda: defaultdict(set))
@@ -869,7 +866,7 @@ class JarPublish(JarTask, ScmPublish):
         invalid.pop(publish_target)
 
     if invalid:
-      msg = list()
+      msg = []
 
       def first_address(pair):
         first, _ = pair
@@ -881,7 +878,8 @@ class JarPublish(JarTask, ScmPublish):
           for reason in sorted(reasons):
             msg.append('\n    %s - %s' % (invalid_target.address, reason))
 
-      raise TaskError('The following errors must be resolved to publish.%s' % ''.join(msg))
+      raise TaskError(
+          f"The following errors must be resolved to publish.{''.join(msg)}")
 
   def exported_targets(self):
     candidates = set()
@@ -894,8 +892,7 @@ class JarPublish(JarTask, ScmPublish):
         mappings = self.context.products.get(lang).get(target)
         if mappings:
           for key, generated in mappings.items():
-            for synthetic in generated:
-              yield synthetic
+            yield from generated
 
       # Handle the case where a code gen target is in the listed roots and thus the publishable
       # target is a synthetic twin generated by a code gen task upstream.

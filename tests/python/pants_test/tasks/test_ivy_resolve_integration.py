@@ -25,14 +25,10 @@ class IvyResolveIntegrationTest(PantsRunIntegrationTest):
          '--resolve-ivy-outdir={reportdir}'.format(reportdir=ivy_report_dir)], workdir)
       self.assert_success(pants_run)
 
-      # Find the ivy report
-      found = False
       pattern = re.compile('internal-[a-f0-9]+-default\.html$')
-      for f in os.listdir(ivy_report_dir):
-        if os.path.isfile(os.path.join(ivy_report_dir, f)):
-          if pattern.match(f):
-            found = True
-            break
+      found = any(
+          os.path.isfile(os.path.join(ivy_report_dir, f)) and pattern.match(f)
+          for f in os.listdir(ivy_report_dir))
       self.assertTrue(found,
                       msg="Couldn't find ivy report in {report_dir}"
                       .format(report_dir=ivy_report_dir))

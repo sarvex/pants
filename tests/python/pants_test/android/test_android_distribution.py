@@ -20,14 +20,13 @@ from pants.util.dirutil import chmod_plus_x, safe_open, touch
 class TestAndroidDistributionTest(unittest.TestCase):
 
   @contextmanager
-  # default for testing purposes being sdk 18 and 19, with latest build-tools 19.1.0
   def distribution(self, installed_sdks=('18', '19'),
                    installed_build_tools=('19.1.0', ),
                    files='android.jar',
                    executables='aapt'):
     with temporary_dir() as sdk:
       for sdks in installed_sdks:
-        touch(os.path.join(sdk, 'platforms', 'android-' + sdks, files))
+        touch(os.path.join(sdk, 'platforms', f'android-{sdks}', files))
       for build in installed_build_tools:
         for exe in maybe_list(executables or ()):
           path = os.path.join(sdk, 'build-tools', build, exe)

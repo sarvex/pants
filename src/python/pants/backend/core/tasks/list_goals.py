@@ -31,18 +31,18 @@ class ListGoals(ConsoleTask):
         elif self.get_options().all:
           undocumented.append(goal.name)
       for name, description in documented_rows:
-        yield '  %s: %s' % (name.rjust(max_width), description)
+        yield f'  {name.rjust(max_width)}: {description}'
       if undocumented:
         yield ''
         yield 'Undocumented goals:'
-        yield '  %s' % ' '.join(undocumented)
+        yield f"  {' '.join(undocumented)}"
 
     def graph():
       def get_cluster_name(goal):
-        return 'cluster_%s' % goal.name.replace('-', '_')
+        return f"cluster_{goal.name.replace('-', '_')}"
 
       def get_node_name(goal, task_name):
-        name = '%s_%s' % (goal.name, task_name)
+        name = f'{goal.name}_{task_name}'
         return name.replace('-', '_')
 
       yield '\n'.join([
@@ -52,27 +52,26 @@ class ListGoals(ConsoleTask):
         ])
       for goal in Goal.all():
         yield '\n'.join([
-          '  subgraph %s {' % get_cluster_name(goal),
-          '    node [style=filled];',
-          '    color = blue;',
-          '    label = "%s";' % goal.name,
+            '  subgraph %s {' % get_cluster_name(goal),
+            '    node [style=filled];',
+            '    color = blue;',
+            f'    label = "{goal.name}";',
         ])
         for name in goal.ordered_task_names():
-          yield '    %s [label="%s"];' % (get_node_name(goal, name), name)
+          yield f'    {get_node_name(goal, name)} [label="{name}"];'
         yield '  }'
 
       edges = set()
       for goal in Goal.all():
         tail_task_name = goal.ordered_task_names()[-1]
         for dep in goal.dependencies:
-          edge = 'ltail=%s lhead=%s' % (get_cluster_name(goal), get_cluster_name(dep))
+          edge = f'ltail={get_cluster_name(goal)} lhead={get_cluster_name(dep)}'
           if edge not in edges:
             # We display edges between clusters (representing goals), but dot still requires
             # us to specify them between nodes (representing tasks) and then add ltail, lhead
             # annotations.  We connect the last task in the dependee to the first task in
             # the dependency, as this leads to the neatest-looking graph.
-            yield '  %s -> %s [%s];' % (get_node_name(goal, tail_task_name),
-                                        get_node_name(dep, dep.ordered_task_names()[0]), edge)
+            yield f'  {get_node_name(goal, tail_task_name)} -> {get_node_name(dep, dep.ordered_task_names()[0])} [{edge}];'
           edges.add(edge)
       yield '}'
 

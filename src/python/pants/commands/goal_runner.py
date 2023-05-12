@@ -145,9 +145,10 @@ class GoalRunner(Command):
             self.targets.append(self.build_graph.get_target(address))
     self.goals = [Goal.by_name(goal) for goal in goals]
 
-    rcfiles = self.config.getdefault('rcfiles', type=list,
-                                     default=['/etc/pantsrc', '~/.pants.rc'])
-    if rcfiles:
+    if rcfiles := self.config.getdefault('rcfiles',
+                                         type=list,
+                                         default=['/etc/pantsrc',
+                                                  '~/.pants.rc']):
       rcfile = RcFile(rcfiles, default_prepend=False, process_default=True)
 
       # Break down the goals specified on the command line to the full set that will be run so we
@@ -163,7 +164,7 @@ class GoalRunner(Command):
           for clazz in task_type.mro():
             if clazz == Task:
               break
-            sections.add('%s.%s' % (clazz.__module__, clazz.__name__))
+            sections.add(f'{clazz.__module__}.{clazz.__name__}')
 
       augmented_args = rcfile.apply_defaults(sections, args)
       if augmented_args != args:

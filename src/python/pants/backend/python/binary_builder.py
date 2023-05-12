@@ -26,7 +26,7 @@ class PythonBinaryBuilder(object):
     self.interpreter = interpreter or PythonInterpreter.get()
     if not isinstance(target, PythonBinary):
       raise PythonBinaryBuilder.NotABinaryTargetException(
-          "Target %s is not a PythonBinary!" % target)
+          f"Target {target} is not a PythonBinary!")
 
     config = Config.from_cache()
     self.distdir = config.getdefault('pants_distdir')
@@ -34,7 +34,7 @@ class PythonBinaryBuilder(object):
 
     run_info = run_tracker.run_info
     build_properties = {}
-    build_properties.update(run_info.add_basic_info(run_id=None, timestamp=time.time()))
+    build_properties |= run_info.add_basic_info(run_id=None, timestamp=time.time())
     build_properties.update(run_info.add_scm_info())
 
     pexinfo = target.pexinfo.copy()
@@ -49,9 +49,9 @@ class PythonBinaryBuilder(object):
         conn_timeout=conn_timeout)
 
   def run(self):
-    print('Building PythonBinary %s:' % self.target)
+    print(f'Building PythonBinary {self.target}:')
     env = self.chroot.dump()
-    filename = os.path.join(self.distdir, '%s.pex' % self.target.name)
+    filename = os.path.join(self.distdir, f'{self.target.name}.pex')
     env.build(filename)
-    print('Wrote %s' % filename)
+    print(f'Wrote {filename}')
     return 0

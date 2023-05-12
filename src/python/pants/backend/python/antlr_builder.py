@@ -37,7 +37,7 @@ class PythonAntlrBuilder(CodeGenerator):
       ivy.execute(args=args)  # TODO: Needs a workunit, when we have a context here.
       return True
     except (Bootstrapper.Error, Ivy.Error) as e:
-      print('ANTLR generation failed! %s' % e, file=sys.stderr)
+      print(f'ANTLR generation failed! {e}', file=sys.stderr)
       return False
 
   def generate(self):
@@ -47,10 +47,7 @@ class PythonAntlrBuilder(CodeGenerator):
     package = ''
     for module_name in self.target.module.split('.'):
       path = os.path.join(path, module_name)
-      if package == '':
-        package = module_name
-      else:
-        package = package + '.' + module_name
+      package = module_name if package == '' else f'{package}.{module_name}'
       safe_mkdir(path)
       with open(os.path.join(path, '__init__.py'), 'w') as f:
         if package != self.target.module:  # Only write this in the non-leaf modules.

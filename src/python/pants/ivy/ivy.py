@@ -27,18 +27,21 @@ class Ivy(object):
 
     self._java = java_executor or SubprocessExecutor()
     if not isinstance(self._java, Executor):
-      raise ValueError('java_executor must be an Executor instance, given %s of type %s'
-                       % (self._java, type(self._java)))
+      raise ValueError(
+          f'java_executor must be an Executor instance, given {self._java} of type {type(self._java)}'
+      )
 
     self._ivy_settings = ivy_settings
     if self._ivy_settings and not isinstance(self._ivy_settings, Compatibility.string):
-      raise ValueError('ivy_settings must be a string, given %s of type %s'
-                       % (self._ivy_settings, type(self._ivy_settings)))
+      raise ValueError(
+          f'ivy_settings must be a string, given {self._ivy_settings} of type {type(self._ivy_settings)}'
+      )
 
     self._ivy_cache_dir = ivy_cache_dir
     if self._ivy_cache_dir and not isinstance(self._ivy_cache_dir, Compatibility.string):
-      raise ValueError('ivy_cache_dir must be a string, given %s of type %s'
-                       % (self._ivy_cache_dir, type(self._ivy_cache_dir)))
+      raise ValueError(
+          f'ivy_cache_dir must be a string, given {self._ivy_cache_dir} of type {type(self._ivy_cache_dir)}'
+      )
 
   @property
   def ivy_settings(self):
@@ -67,22 +70,23 @@ class Ivy(object):
         raise self.Error('Ivy command failed with exit code %d%s'
                          % (result, ': ' + ' '.join(args) if args else ''))
     except self._java.Error as e:
-      raise self.Error('Problem executing ivy: %s' % e)
+      raise self.Error(f'Problem executing ivy: {e}')
 
   def runner(self, jvm_options=None, args=None, executor=None):
     """Creates an ivy commandline client runner for the given args."""
     args = args or []
     executor = executor or self._java
     if not isinstance(executor, Executor):
-      raise ValueError('The executor argument must be an Executor instance, given %s of type %s'
-                       % (executor, type(executor)))
+      raise ValueError(
+          f'The executor argument must be an Executor instance, given {executor} of type {type(executor)}'
+      )
 
     if self._ivy_cache_dir and '-cache' not in args:
       # TODO(John Sirois): Currently this is a magic property to support hand-crafted <caches/> in
       # ivysettings.xml.  Ideally we'd support either simple -caches or these hand-crafted cases
       # instead of just hand-crafted.  Clean this up by taking over ivysettings.xml and generating
       # it from BUILD constructs.
-      jvm_options = ['-Divy.cache.dir=%s' % self._ivy_cache_dir] + (jvm_options or [])
+      jvm_options = [f'-Divy.cache.dir={self._ivy_cache_dir}'] + (jvm_options or [])
 
     if self._ivy_settings and '-settings' not in args:
       args = ['-settings', self._ivy_settings] + args

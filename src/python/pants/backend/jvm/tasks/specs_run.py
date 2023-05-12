@@ -51,38 +51,39 @@ class SpecsRun(JvmTask, JvmToolTaskMixin):
     round_manager.require_data('classes_by_target')
 
   def execute(self):
-    if not self.skip:
-      targets = self.context.targets()
+    if self.skip:
+      return
+    targets = self.context.targets()
 
-      def run_tests(tests):
-        args = ['--color'] if self.color else []
-        args.append('--specs=%s' % ','.join(tests))
-        specs_runner_main = 'com.twitter.common.testing.ExplicitSpecsRunnerMain'
+    def run_tests(tests):
+      args = ['--color'] if self.color else []
+      args.append(f"--specs={','.join(tests)}")
+      specs_runner_main = 'com.twitter.common.testing.ExplicitSpecsRunnerMain'
 
-        bootstrapped_cp = self.tool_classpath(self._specs_bootstrap_key)
-        classpath = self.classpath(
-            bootstrapped_cp,
-            confs=self.confs,
-            exclusives_classpath=self.get_base_classpath_for_target(targets[0]))
+      bootstrapped_cp = self.tool_classpath(self._specs_bootstrap_key)
+      classpath = self.classpath(
+          bootstrapped_cp,
+          confs=self.confs,
+          exclusives_classpath=self.get_base_classpath_for_target(targets[0]))
 
-        result = execute_java(
-          classpath=classpath,
-          main=specs_runner_main,
-          jvm_options=self.jvm_options,
-          args=self.args + args,
-          workunit_factory=self.context.new_workunit,
-          workunit_name='specs',
-          workunit_labels=[WorkUnit.TEST]
-        )
-        if result != 0:
-          raise TaskError('java %s ... exited non-zero (%i)' % (specs_runner_main, result))
+      result = execute_java(
+        classpath=classpath,
+        main=specs_runner_main,
+        jvm_options=self.jvm_options,
+        args=self.args + args,
+        workunit_factory=self.context.new_workunit,
+        workunit_name='specs',
+        workunit_labels=[WorkUnit.TEST]
+      )
+      if result != 0:
+        raise TaskError('java %s ... exited non-zero (%i)' % (specs_runner_main, result))
 
-      if self.tests:
-        run_tests(self.tests)
-      else:
-        with safe_args(self.calculate_tests(targets)) as tests:
-          if tests:
-            run_tests(tests)
+    if self.tests:
+      run_tests(self.tests)
+    else:
+      with safe_args(self.calculate_tests(targets)) as tests:
+        if tests:
+          run_tests(tests)
 
   def calculate_tests(self, targets):
     tests = OrderedSet()

@@ -41,8 +41,7 @@ class JavaProtobufLibrary(ExportableJvmLibrary):
 
   @property
   def traversable_specs(self):
-    for spec in super(JavaProtobufLibrary, self).traversable_specs:
-      yield spec
+    yield from super(JavaProtobufLibrary, self).traversable_specs
     if self.payload.raw_imports:
       for spec  in self.payload.raw_imports:
         # This simply skips over non-strings, but we catch them with a WrongTargetType below.

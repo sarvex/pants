@@ -53,7 +53,7 @@ class PythonChroot(object):
 
   class InvalidDependencyException(Exception):
     def __init__(self, target):
-      Exception.__init__(self, "Not a valid Python dependency! Found: %s" % target)
+      Exception.__init__(self, f"Not a valid Python dependency! Found: {target}")
 
   def __init__(self,
                targets,
@@ -87,7 +87,7 @@ class PythonChroot(object):
     if os.getenv('PANTS_LEAVE_CHROOT') is None:
       self.delete()
     else:
-      self.debug('Left chroot at %s' % self.path())
+      self.debug(f'Left chroot at {self.path()}')
 
   @property
   def builder(self):
@@ -95,7 +95,7 @@ class PythonChroot(object):
 
   def debug(self, msg, indent=0):
     if os.getenv('PANTS_VERBOSE') is not None:
-      print('%s%s' % (' ' * indent, msg))
+      print(f"{' ' * indent}{msg}")
 
   def path(self):
     return os.path.realpath(self._builder.path())
@@ -105,7 +105,7 @@ class PythonChroot(object):
       src = os.path.join(get_buildroot(), base, path)
       add_function(src, path)
 
-    self.debug('  Dumping library: %s' % library)
+    self.debug(f'  Dumping library: {library}')
     for relpath in library.sources_relative_to_source_root():
       try:
         copy_to_chroot(library.target_base, relpath, self._builder.add_source)
@@ -128,17 +128,19 @@ class PythonChroot(object):
           raise
 
   def _dump_requirement(self, req, dynamic, repo):
-    self.debug('  Dumping requirement: %s%s%s' % (str(req),
-      ' (dynamic)' if dynamic else '', ' (repo: %s)' % repo if repo else ''))
+    self.debug(
+        f"  Dumping requirement: {str(req)}{' (dynamic)' if dynamic else ''}{f' (repo: {repo})' if repo else ''}"
+    )
     self._builder.add_requirement(req, dynamic, repo)
 
   def _dump_distribution(self, dist):
-    self.debug('  Dumping distribution: .../%s' % os.path.basename(dist.location))
+    self.debug(f'  Dumping distribution: .../{os.path.basename(dist.location)}')
     self._builder.add_distribution(dist)
 
   def _generate_requirement(self, library, builder_cls):
     library_key = self._key_generator.key_for_target(library)
-    builder = builder_cls(library, get_buildroot(), self._config, '-' + library_key.hash[:8])
+    builder = builder_cls(library, get_buildroot(), self._config,
+                          f'-{library_key.hash[:8]}')
 
     cache_dir = os.path.join(self._egg_cache_root, library_key.id)
     if self._build_invalidator.needs_update(library_key):
@@ -170,7 +172,7 @@ class PythonChroot(object):
     return children
 
   def dump(self):
-    self.debug('Building chroot for %s:' % self._targets)
+    self.debug(f'Building chroot for {self._targets}:')
     targets = self.resolve(self._targets)
 
     for lib in targets['libraries'] | targets['binaries']:
@@ -196,7 +198,7 @@ class PythonChroot(object):
     reqs_to_build = OrderedSet()
     for req in reqs_from_libraries | generated_reqs | self._extra_requirements:
       if not req.should_build(self._interpreter.python, Platform.current()):
-        self.debug('Skipping %s based upon version filter' % req)
+        self.debug(f'Skipping {req} based upon version filter')
         continue
       reqs_to_build.add(req)
       self._dump_requirement(req._requirement, False, req._repository)

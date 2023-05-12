@@ -131,16 +131,18 @@ class SourceRootTest(unittest.TestCase):
     self.assertEquals((None, None), tree.get_root_and_types("src/language"))
     self.assertEquals((None, None), tree.get_root_and_types("src"))
 
-    tree.add_root("tests/language", set([NotTestTarget, TestTarget]))
+    tree.add_root("tests/language", {NotTestTarget, TestTarget})
     self.assertEquals(("tests/language", OrderedSet([NotTestTarget, TestTarget])),
                       tree.get_root_and_types("tests/language"),
                       msg="Failed for tree: {dump}".format(dump=tree._dump()))
     root, types = tree.get_root_and_types("tests/language/foo")
     self.assertEquals("tests/language", root,
                       msg="Failed for tree: {dump}".format(dump=tree._dump()))
-    self.assertEquals(set(types),
-                      set([NotTestTarget, TestTarget]),
-                      msg="Failed for tree: {dump}".format(dump=tree._dump()))
+    self.assertEquals(
+        set(types),
+        {NotTestTarget, TestTarget},
+        msg="Failed for tree: {dump}".format(dump=tree._dump()),
+    )
     self.assertEquals((None, None), tree.get_root_and_types("src"),
                       msg="Failed for tree: {dump}".format(dump=tree._dump()))
     self.assertEquals((None, None), tree.get_root_and_types("src/bar"),
@@ -148,7 +150,7 @@ class SourceRootTest(unittest.TestCase):
     self.assertEquals((None, None), tree.get_root_and_types("s"),
                       msg="Failed for tree: {dump}".format(dump=tree._dump()))
 
-    tree.add_root("src/language", set([NotTestTarget]))
+    tree.add_root("src/language", {NotTestTarget})
     self.assertEquals(("tests/language", OrderedSet([NotTestTarget, TestTarget])),
                       tree.get_root_and_types("tests/language"),
                       msg="Failed for tree: {dump}".format(dump=tree._dump()))
@@ -164,25 +166,27 @@ class SourceRootTest(unittest.TestCase):
     self.assertEquals((None, None), tree.get_root_and_types("src"),
                       msg="Failed for tree: {dump}".format(dump=tree._dump()))
     with self.assertRaises(SourceRootTree.DuplicateSourceRootError):
-      tree.add_root("tests/language", set([NotTestTarget]))
+      tree.add_root("tests/language", {NotTestTarget})
     with self.assertRaises(SourceRootTree.NestedSourceRootError):
-      tree.add_root("tests", set([NotTestTarget]))
+      tree.add_root("tests", {NotTestTarget})
 
   def test_mutable(self):
     tree = SourceRootTree()
-    tree.add_root("mutable/foo", set([NotTestTarget, TestTarget]), mutable=True)
-    tree.add_root("immutable/foo", set([NotTestTarget, TestTarget]), mutable=False)
+    tree.add_root("mutable/foo", {NotTestTarget, TestTarget}, mutable=True)
+    tree.add_root("immutable/foo", {NotTestTarget, TestTarget}, mutable=False)
     with self.assertRaises(SourceRootTree.DuplicateSourceRootError):
       # Can't add an immutable root to a mutable root
-      tree.add_root("mutable/foo", set([AnotherTarget]))
+      tree.add_root("mutable/foo", {AnotherTarget})
     with self.assertRaises(SourceRootTree.DuplicateSourceRootError):
       # Can't add an mutable root to an immutable root
-      tree.add_root("immutable/foo", set([AnotherTarget]), mutable=True)
+      tree.add_root("immutable/foo", {AnotherTarget}, mutable=True)
     # But can add a mutable root to a mutable root
-    tree.add_root("mutable/foo", set([AnotherTarget]), mutable=True)
-    self.assertEquals(set([AnotherTarget, NotTestTarget, TestTarget]),
-                      set(tree.get_root_and_types("mutable/foo")[1]),
-                      msg="Failed for tree: {dump}".format(dump=tree._dump()))
+    tree.add_root("mutable/foo", {AnotherTarget}, mutable=True)
+    self.assertEquals(
+        {AnotherTarget, NotTestTarget, TestTarget},
+        set(tree.get_root_and_types("mutable/foo")[1]),
+        msg="Failed for tree: {dump}".format(dump=tree._dump()),
+    )
 
   def _add_siblings1(self, tree, common_root):
     tree.add_root(os.path.join(common_root, 'src/java'),[NotTestTarget])

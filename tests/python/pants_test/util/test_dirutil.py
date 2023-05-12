@@ -50,10 +50,10 @@ class DirutilTest(unittest.TestCase):
       self.assertEquals(DIR1, dirutil.safe_mkdtemp(dir='1', cleaner=faux_cleaner))
       self.assertEquals(DIR2, dirutil.safe_mkdtemp(dir='2', cleaner=faux_cleaner))
       self.assertIn('unicorn', dirutil._MKDTEMP_DIRS)
-      self.assertEquals(set([DIR1, DIR2]), dirutil._MKDTEMP_DIRS['unicorn'])
+      self.assertEquals({DIR1, DIR2}, dirutil._MKDTEMP_DIRS['unicorn'])
       dirutil._mkdtemp_atexit_cleaner()
       self.assertNotIn('unicorn', dirutil._MKDTEMP_DIRS)
-      self.assertEquals(set(['yoyo']), dirutil._MKDTEMP_DIRS['fluffypants'])
+      self.assertEquals({'yoyo'}, dirutil._MKDTEMP_DIRS['fluffypants'])
     finally:
       dirutil._MKDTEMP_DIRS.pop('unicorn', None)
       dirutil._MKDTEMP_DIRS.pop('fluffypants', None)

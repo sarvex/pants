@@ -143,8 +143,7 @@ def chmod_plus_x(path):
 def relativize_path(path, rootdir):
   real_path = os.path.realpath(path)
   relative_path = os.path.relpath(real_path, rootdir)
-  final_path = relative_path if len(relative_path) < len(real_path) else real_path
-  return final_path
+  return relative_path if len(relative_path) < len(real_path) else real_path
 
 
 # When running pants under mesos/aurora, the sandbox pathname can be very long. Since it gets

@@ -87,8 +87,8 @@ class PythonSetup(PythonTask):
       for prv in providers:
         depmap[prv].add(dep)
         if dep in parents:
-          raise TargetDefinitionException(root_target,
-             '%s and %s combined have a cycle!' % (root_target, dep))
+          raise TargetDefinitionException(
+              root_target, f'{root_target} and {dep} combined have a cycle!')
         parents.add(dep)
         cls._construct_provider_map(root_target, dep, parents, providers, depmap)
         parents.remove(dep)
@@ -183,7 +183,8 @@ class PythonSetup(PythonTask):
         break
     else:
       raise TypeError(
-          'write_generated_sources could not find suitable code generator for %s' % type(target))
+          f'write_generated_sources could not find suitable code generator for {type(target)}'
+      )
 
     builder = builder_cls(target, root, config)
     builder.generate()
@@ -237,14 +238,14 @@ class PythonSetup(PythonTask):
           # could indicate bad BUILD hygiene.
           # raise cls.UndefinedSource('%s is source but does not belong to a package!' % filename)
           if log:
-            log.warn('%s is source but does not belong to a package.' % real_filename)
+            log.warn(f'{real_filename} is source but does not belong to a package.')
         else:
           continue
       submodule = cls.nearest_subpackage(module, packages)
       if submodule == module:
         resources[submodule].add(filename)
       else:
-        assert module.startswith(submodule + '.')
+        assert module.startswith(f'{submodule}.')
         relative_module = module[len(submodule) + 1:]
         relative_filename = os.path.join(relative_module.replace('.', os.path.sep), filename)
         resources[submodule].add(relative_filename)
@@ -327,8 +328,11 @@ class PythonSetup(PythonTask):
       setup_keywords.update(
           package_dir=package_dir,
           packages=list(sorted(packages)),
-          package_data=dict((str(package), list(map(str, rs)))
-                            for (package, rs) in resources.items()))
+          package_data={
+              str(package): list(map(str, rs))
+              for (package, rs) in resources.items()
+          },
+      )
 
     setup_keywords['install_requires'] = sorted(list(self.install_requires(root_target)))
 
@@ -338,12 +342,12 @@ class PythonSetup(PythonTask):
       if 'console_scripts' not in setup_keywords['entry_points']:
         setup_keywords['entry_points']['console_scripts'] = []
       setup_keywords['entry_points']['console_scripts'].append(
-          '%s = %s' % (binary_name, entry_point))
+          f'{binary_name} = {entry_point}')
 
     # From http://stackoverflow.com/a/13105359
     def convert(input):
       if isinstance(input, dict):
-        out = dict()
+        out = {}
         for key, value in input.items():
           out[convert(key)] = convert(value)
         return out
@@ -384,20 +388,20 @@ class PythonSetup(PythonTask):
     chroot = Chroot(dist_dir, name=target.provides.name)
     self.write_contents(target, chroot)
     self.write_setup(target, chroot)
-    target_base = '%s-%s' % (target.provides.name, target.provides.version)
+    target_base = f'{target.provides.name}-{target.provides.version}'
     setup_dir = os.path.join(dist_dir, target_base)
     safe_rmtree(setup_dir)
     shutil.move(chroot.path(), setup_dir)
 
     if not self._run:
-      self.context.log.info('Running packager against %s' % setup_dir)
+      self.context.log.info(f'Running packager against {setup_dir}')
       setup_runner = Packager(setup_dir)
       tgz_name = os.path.basename(setup_runner.sdist())
-      self.context.log.info('Writing %s' % os.path.join(dist_dir, tgz_name))
+      self.context.log.info(f'Writing {os.path.join(dist_dir, tgz_name)}')
       shutil.move(setup_runner.sdist(), os.path.join(dist_dir, tgz_name))
       safe_rmtree(setup_dir)
     else:
-      self.context.log.info('Running %s against %s' % (self._run, setup_dir))
+      self.context.log.info(f'Running {self._run} against {setup_dir}')
       setup_runner = SetupPyRunner(setup_dir, self._run)
       setup_runner.run()
 

@@ -59,7 +59,8 @@ class TaskTest(BaseTest):
     """
 
     task_type = self.task_type()
-    assert issubclass(task_type, Task), 'task_type must be a Task subclass, got %s' % task_type
+    assert issubclass(
+        task_type, Task), f'task_type must be a Task subclass, got {task_type}'
 
     config = create_config(config or '')
     workdir = os.path.join(config.getdefault('pants_workdir'), 'test', task_type.__name__)
@@ -97,8 +98,7 @@ class TaskTest(BaseTest):
     addresses = list(spec_parser.parse_addresses(spec))
     for address in addresses:
       self.build_graph.inject_address_closure(address)
-    targets = [self.build_graph.get_target(address) for address in addresses]
-    return targets
+    return [self.build_graph.get_target(address) for address in addresses]
 
   def assertDeps(self, target, expected_deps=None):
     """Check that actual and expected dependencies of the given target match.
@@ -120,8 +120,9 @@ class ConsoleTaskTest(TaskTest):
     super(ConsoleTaskTest, self).setUp()
 
     task_type = self.task_type()
-    assert issubclass(task_type, ConsoleTask), \
-        'task_type() must return a ConsoleTask subclass, got %s' % task_type
+    assert issubclass(
+        task_type, ConsoleTask
+    ), f'task_type() must return a ConsoleTask subclass, got {task_type}'
 
   def execute_task(self, config=None, args=None, targets=None):
     """Creates a new task and executes it with the given config, command line args and targets.

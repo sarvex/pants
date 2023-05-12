@@ -72,45 +72,50 @@ class BuildLint(Task):
   INLINE_SINGLE_DEP_RE = re.compile(r'^ *dependencies *= *\[[^\n,\]]* *\]')
 
   def _fix_lint(self, buildfile_path, missing_dep_map):
-    if os.path.exists(buildfile_path):
-      with open(buildfile_path, 'r') as infile:
-        old_buildfile_source = infile.read()
-      names = []
-      for m in BuildLint.NAMES_RE.finditer(old_buildfile_source):
-        names.append(m.group(1))
+    if not os.path.exists(buildfile_path):
+      return
+    with open(buildfile_path, 'r') as infile:
+      old_buildfile_source = infile.read()
+    names = []
+    for m in BuildLint.NAMES_RE.finditer(old_buildfile_source):
+      names.append(m.group(1))
 
-      # We'll step through this to find the name of the target whose deps we're currently looking at.
-      nameiter = iter(names)
+    # We'll step through this to find the name of the target whose deps we're currently looking at.
+    nameiter = iter(names)
 
-      def sort_deps(m):
-        try:
-          name = nameiter.next()
-        except StopIteration:
-          name = '-UNKNOWN-'
-        deps = m.group(1).split('\n')
-        deps = filter(lambda x: x, [x.strip().replace('"', "'") for x in deps])
-        missing_deps = ["'%s'," % x for x in missing_dep_map[name]]
-        deps.extend(missing_deps)
-        if deps:  # Add comma if needed. We must do this before sorting.
+    def sort_deps(m):
+      try:
+        name = nameiter.next()
+      except StopIteration:
+        name = '-UNKNOWN-'
+      deps = m.group(1).split('\n')
+      deps = filter(lambda x: x, [x.strip().replace('"', "'") for x in deps])
+      missing_deps = [f"'{x}'," for x in missing_dep_map[name]]
+      deps.extend(missing_deps)
+      if deps:  # Add comma if needed. We must do this before sorting.
           # Allow a single dep on a single line, if that's what the file already had.
           # This is common in 3rdparty/BUILD files.
-          if len(deps) == 1 and BuildLint.INLINE_SINGLE_DEP_RE.match(m.group(0)):
-            return '  dependencies = [%s]' % deps[0]
-          parts = [x.strip() for x in deps[-1].split('#')]
-          if not parts[0].rstrip().endswith(','):
-            deps[-1] = '%s,%s' % (parts[0], ' #' + parts[1] if len(parts) > 1 else '')
+        if len(deps) == 1 and BuildLint.INLINE_SINGLE_DEP_RE.match(m.group(0)):
+          return f'  dependencies = [{deps[0]}]'
+        parts = [x.strip() for x in deps[-1].split('#')]
+        if not parts[0].rstrip().endswith(','):
+          deps[-1] = f"{parts[0]},{f' #{parts[1]}' if len(parts) > 1 else ''}"
 
         # The key hack is to make sure local imports (those starting with a colon) come last.
-        deps = sorted(deps, key=lambda x: 'zzz' + x if (x.startswith("':") or x.startswith("pants(':")) else x)
-        res = '  dependencies = [\n    %s\n  ]' % ('\n    '.join(deps)) if deps else 'dependencies = []'
-        return res
+      deps = sorted(
+          deps,
+          key=lambda x: f'zzz{x}'
+          if (x.startswith("':") or x.startswith("pants(':")) else x,
+      )
+      res = '  dependencies = [\n    %s\n  ]' % ('\n    '.join(deps)) if deps else 'dependencies = []'
+      return res
 
-      new_buildfile_source = BuildLint.DEPS_RE.sub(sort_deps, old_buildfile_source)
-      if new_buildfile_source != old_buildfile_source:
-        if 'rewrite' in self.actions:
-          with open(buildfile_path, 'w') as outfile:
-            outfile.write(new_buildfile_source)
-        if 'diff' in self.actions:
-          diff = '\n'.join(difflib.unified_diff(old_buildfile_source.split('\n'),
-            new_buildfile_source.split('\n'), buildfile_path))
-          print(diff)
+    new_buildfile_source = BuildLint.DEPS_RE.sub(sort_deps, old_buildfile_source)
+    if new_buildfile_source != old_buildfile_source:
+      if 'rewrite' in self.actions:
+        with open(buildfile_path, 'w') as outfile:
+          outfile.write(new_buildfile_source)
+      if 'diff' in self.actions:
+        diff = '\n'.join(difflib.unified_diff(old_buildfile_source.split('\n'),
+          new_buildfile_source.split('\n'), buildfile_path))
+        print(diff)

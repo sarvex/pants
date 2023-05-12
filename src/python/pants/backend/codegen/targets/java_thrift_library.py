@@ -17,7 +17,8 @@ class JavaThriftLibrary(JvmTarget):
     @staticmethod
     def _check_java_thrift_library(target):
       if not isinstance(target, JavaThriftLibrary):
-        raise ValueError('Expected a JavaThriftLibrary, got: %s of type %s' % (target, type(target)))
+        raise ValueError(
+            f'Expected a JavaThriftLibrary, got: {target} of type {type(target)}')
 
     def __init__(self, config=None):
       self._config = config or Config.from_cache()
@@ -68,8 +69,10 @@ class JavaThriftLibrary(JvmTarget):
 
     def check_value_for_arg(arg, value, values):
       if value is not None and value not in values:
-        raise TargetDefinitionException(self, "%s may only be set to %s ('%s' not valid)" %
-                                        (arg, ', or '.join(map(repr, values)), value))
+        raise TargetDefinitionException(
+            self,
+            f"{arg} may only be set to {', or '.join(map(repr, values))} ('{value}' not valid)",
+        )
       return value
 
     # TODO(pl): These should all live in payload fields

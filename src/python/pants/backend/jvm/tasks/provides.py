@@ -70,7 +70,7 @@ class Provides(Task):
               class_name = line[:-6].replace('/', '.')
               do_write(class_name)
               do_write('\n')
-      self.context.log.info('Wrote provides information to %s' % outpath)
+      self.context.log.info(f'Wrote provides information to {outpath}')
 
   def get_jar_paths(self, ivyinfo, target, conf):
     jar_paths = OrderedSet()

@@ -67,7 +67,7 @@ class SpecExcludeIntegrationTest(PantsRunIntegrationTest):
         .format(missing=', '.join(missing)))
 
   def _test_bundle_existences(self, args, bundles, config=None):
-    all_bundles = set(bundle.spec for bundle in Bundles.all_bundles)
+    all_bundles = {bundle.spec for bundle in Bundles.all_bundles}
     all_paths = [self._bundle_path(bundle) for bundle in all_bundles]
 
     names = [bundle.spec for bundle in bundles]
@@ -115,30 +115,30 @@ class SpecExcludeIntegrationTest(PantsRunIntegrationTest):
 
   def test_all_run(self):
     """Test whether we can run everything with ::."""
-    self._test_bundle_existences(
-        [Bundles.phrase_path + '::',],
-        Bundles.all_bundles,
-    )
+    self._test_bundle_existences([f'{Bundles.phrase_path}::'], Bundles.all_bundles)
 
   def test_exclude_lesser(self):
     self._test_bundle_existences(
-        [Bundles.phrase_path + '::', '--exclude-target-regexp=lesser',],
-        set(Bundles.all_bundles) - set([Bundles.lesser_of_two,]),
+        [f'{Bundles.phrase_path}::', '--exclude-target-regexp=lesser'],
+        set(Bundles.all_bundles) - {Bundles.lesser_of_two},
     )
 
   def test_exclude_thoe(self):
     self._test_bundle_existences(
-        [Bundles.phrase_path + '::', r'--exclude-target-regexp=\bth[oe]',],
-        set(Bundles.all_bundles) - set([Bundles.there_was_a_duck, Bundles.ten_thousand,]),
+        [f'{Bundles.phrase_path}::', r'--exclude-target-regexp=\bth[oe]'],
+        set(Bundles.all_bundles) -
+        {Bundles.there_was_a_duck, Bundles.ten_thousand},
     )
 
   def test_exclude_two(self):
-    self._test_bundle_existences([
-          Bundles.phrase_path + '::',
-          '--exclude-target-regexp=duck',
-          '--exclude-target-regexp=time',
+    self._test_bundle_existences(
+        [
+            f'{Bundles.phrase_path}::',
+            '--exclude-target-regexp=duck',
+            '--exclude-target-regexp=time',
         ],
-        set(Bundles.all_bundles) - set([Bundles.there_was_a_duck, Bundles.once_upon_a_time,]),
+        set(Bundles.all_bundles) -
+        {Bundles.there_was_a_duck, Bundles.once_upon_a_time},
     )
 
 class SpecExcludePantsIniIntegrationTest(PantsRunIntegrationTest):
@@ -147,7 +147,7 @@ class SpecExcludePantsIniIntegrationTest(PantsRunIntegrationTest):
   def test_exclude_spec_pants_ini(self):
     def output_to_list(output_filename):
       with open(output_filename, 'r') as results_file:
-        return set([line.rstrip() for line in results_file.readlines()])
+        return {line.rstrip() for line in results_file.readlines()}
 
     tempdir = tempfile.mkdtemp()
     tmp_output = os.path.join(tempdir, 'minimize-output1.txt')

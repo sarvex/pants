@@ -43,6 +43,6 @@ class JavaAntlrLibrary(ExportableJvmLibrary):
     self.sources = sources
 
     if compiler not in ('antlr3', 'antlr4'):
-      raise ValueError("Illegal value for 'compiler': {}".format(compiler))
+      raise ValueError(f"Illegal value for 'compiler': {compiler}")
     self.compiler = compiler
     self.package = package

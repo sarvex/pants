@@ -62,4 +62,4 @@ class ConsoleTaskTest(TaskTest):
 
       # Instead of taking the generic pytest.raises message, provide a more detailed failure
       # message that shows exactly what untrapped error was on the queue.
-      self.fail('task raised %s' % e)
+      self.fail(f'task raised {e}')

@@ -45,12 +45,13 @@ class JavadocGen(JvmdocGen):
     command.extend(['-J{0}'.format(jvm_option) for jvm_option in self.jvm_options])
 
     # Always provide external linking for java API
-    offlinelinks = set(['http://download.oracle.com/javase/6/docs/api/'])
+    offlinelinks = {'http://download.oracle.com/javase/6/docs/api/'}
 
     def link(target):
       for jar in target.jar_dependencies:
         if jar.apidocs:
           offlinelinks.add(jar.apidocs)
+
     for target in targets:
       target.walk(link, lambda t: t.is_jvm)
 

@@ -75,10 +75,11 @@ class JvmTask(Task):
     if not targets:
       return []
     egroups = self.context.products.get_data('exclusives_groups')
-    group_keys = set([egroups.get_group_key_for_target(t) for t in targets])
+    group_keys = {egroups.get_group_key_for_target(t) for t in targets}
     if len(group_keys) != 1:
-      raise TaskError('Targets are in different exclusives groups: %s' %
-                      ', '.join([repr(t) for t in targets]))
+      raise TaskError(
+          f"Targets are in different exclusives groups: {', '.join([repr(t) for t in targets])}"
+      )
     return egroups.get_classpath_for_group(iter(group_keys).next())
 
   def classpath(self, cp=None, confs=None, exclusives_classpath=None):
@@ -90,11 +91,10 @@ class JvmTask(Task):
     def add_resource_paths(predicate):
       bases = set()
       for target in self.context.targets():
-        if predicate(target):
-          if target.target_base not in bases:
-            sibling_resources_base = os.path.join(os.path.dirname(target.target_base), 'resources')
-            classpath.append(os.path.join(get_buildroot(), sibling_resources_base))
-            bases.add(target.target_base)
+        if predicate(target) and target.target_base not in bases:
+          sibling_resources_base = os.path.join(os.path.dirname(target.target_base), 'resources')
+          classpath.append(os.path.join(get_buildroot(), sibling_resources_base))
+          bases.add(target.target_base)
 
     if self.context.config.getbool('jvm', 'parallel_src_paths', default=False):
       add_resource_paths(lambda t: t.is_jvm and not t.is_test)

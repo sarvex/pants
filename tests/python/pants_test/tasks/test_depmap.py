@@ -40,30 +40,37 @@ class DepmapTest(BaseDepmapTest):
     super(DepmapTest, self).setUp()
 
     def add_to_build_file(path, name, type, deps=(), **kwargs):
-      self.add_to_build_file(path, dedent('''
+      self.add_to_build_file(
+          path,
+          dedent(('''
           %(type)s(name='%(name)s',
             dependencies=[%(deps)s],
             %(extra)s
           )
           ''' % dict(
-        type=type,
-        name=name,
-        deps=','.join("pants('%s')" % dep for dep in list(deps)),
-        extra=('' if not kwargs else ', '.join('%s=%r' % (k, v) for k, v in kwargs.items()))
-      )))
+              type=type,
+              name=name,
+              deps=','.join(f"pants('{dep}')" for dep in list(deps)),
+              extra=('' if not kwargs else ', '.join(
+                  '%s=%r' % (k, v) for k, v in kwargs.items())),
+          ))),
+      )
 
     def create_python_binary_target(path, name, entry_point, type, deps=()):
-      self.add_to_build_file(path, dedent('''
+      self.add_to_build_file(
+          path,
+          dedent(('''
           %(type)s(name='%(name)s',
             entry_point='%(entry_point)s',
             dependencies=[%(deps)s]
           )
           ''' % dict(
-        type=type,
-        entry_point=entry_point,
-        name=name,
-        deps=','.join("pants('%s')" % dep for dep in list(deps)))
-      ))
+              type=type,
+              entry_point=entry_point,
+              name=name,
+              deps=','.join(f"pants('{dep}')" for dep in list(deps)),
+          ))),
+      )
 
     def create_jvm_app(path, name, type, binary, deps=()):
       self.add_to_build_file(path, dedent('''
@@ -387,10 +394,8 @@ class ProjectInfoTest(ConsoleTaskTest):
     self.assertEqual(1, len(result['targets']['project_info:third']['roots']))
     source_root = result['targets']['project_info:third']['roots'][0]
     self.assertEqual('com.foo', source_root['package_prefix'])
-    self.assertEqual(
-      '%s/project_info/com/foo' % self.build_root,
-      source_root['source_root']
-    )
+    self.assertEqual(f'{self.build_root}/project_info/com/foo',
+                     source_root['source_root'])
 
   def test_jvm_app(self):
     result = get_json(self.execute_console_task(
@@ -468,15 +473,18 @@ class ProjectInfoTest(ConsoleTaskTest):
 
   def test_output_file(self):
     outfile = os.path.join(self.build_root, '.pants.d', 'test')
-    self.execute_console_task(args=['--test-project-info', '--test-output-file=%s' % outfile],
-                              targets=[self.target('project_info:target_type')])
+    self.execute_console_task(
+        args=['--test-project-info', f'--test-output-file={outfile}'],
+        targets=[self.target('project_info:target_type')],
+    )
     self.assertTrue(os.path.exists(outfile))
 
   def test_output_file_error(self):
     with self.assertRaises(TaskError):
-      self.execute_console_task(args=['--test-project-info',
-                                      '--test-output-file=%s' % self.build_root],
-                                targets=[self.target('project_info:target_type')])
+      self.execute_console_task(
+          args=['--test-project-info', f'--test-output-file={self.build_root}'],
+          targets=[self.target('project_info:target_type')],
+      )
 
   def test_unrecognized_target_type(self):
     with self.assertRaises(TaskError):

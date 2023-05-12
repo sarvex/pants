@@ -146,8 +146,7 @@ class GroupIterator(object):
     self._group_members = group_members
 
   def __iter__(self):
-    for group_member, chunk in self._create_chunks():
-      yield group_member, chunk
+    yield from self._create_chunks()
 
   def _create_chunks(self):
     def discriminator(tgt):
@@ -190,8 +189,9 @@ class ExclusivesIterator(object):
       to iterate.
     """
     if not isinstance(exclusives_mapping, ExclusivesMapping):
-      raise ValueError('An ExclusivesMapping is required, given %s of type %s'
-                       % (exclusives_mapping, type(exclusives_mapping)))
+      raise ValueError(
+          f'An ExclusivesMapping is required, given {exclusives_mapping} of type {type(exclusives_mapping)}'
+      )
     self._exclusives_mapping = exclusives_mapping
 
   def __iter__(self):

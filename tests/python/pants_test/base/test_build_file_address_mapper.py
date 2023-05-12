@@ -62,17 +62,24 @@ class BuildFileAddressMapperTest(BaseTest):
     subdir_suffix_build_file = self.add_to_build_file('subdir/BUILD.suffix', 'target(name="baz")')
     with open(os.path.join(self.build_root, 'BUILD.invalid.suffix'), 'w') as invalid_build_file:
       invalid_build_file.write('target(name="foobar")')
-    self.assertEquals(set([BuildFileAddress(root_build_file, 'foo'),
-                           BuildFileAddress(subdir_build_file, 'bar'),
-                           BuildFileAddress(subdir_suffix_build_file, 'baz')]),
-                      self.address_mapper.scan_addresses(root=self.build_root))
+    self.assertEquals(
+        {
+            BuildFileAddress(root_build_file, 'foo'),
+            BuildFileAddress(subdir_build_file, 'bar'),
+            BuildFileAddress(subdir_suffix_build_file, 'baz'),
+        },
+        self.address_mapper.scan_addresses(root=self.build_root),
+    )
 
   def test_scan_addresses_with_excludes(self):
     root_build_file = self.add_to_build_file('BUILD', 'target(name="foo")')
     subdir_build_file = self.add_to_build_file('subdir/BUILD', 'target(name="bar")')
     spec_excludes = [ os.path.join(self.build_root, 'subdir')]
-    self.assertEquals(set([BuildFileAddress(root_build_file, 'foo')]),
-                      self.address_mapper.scan_addresses(root=self.build_root, spec_excludes=spec_excludes))
+    self.assertEquals(
+        {BuildFileAddress(root_build_file, 'foo')},
+        self.address_mapper.scan_addresses(root=self.build_root,
+                                           spec_excludes=spec_excludes),
+    )
 
   def test_raises_invalid_build_file_reference(self):
     # reference a BUILD file that doesn't exist

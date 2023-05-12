@@ -29,12 +29,10 @@ class Engine(AbstractClass):
       for goal in _goals:
         if goal not in processed:
           processed.add(goal)
-          for dep in order(goal.dependencies):
-            yield dep
+          yield from order(goal.dependencies)
           yield goal
 
-    for ordered in order(goals):
-      yield ordered
+    yield from order(goals)
 
   def execute(self, context, goals):
     """Executes the supplied goals and their dependencies against the given context.
@@ -48,8 +46,7 @@ class Engine(AbstractClass):
       self.attempt(context, goals)
       return 0
     except TaskError as e:
-      message = '%s' % e
-      if message:
+      if message := f'{e}':
         print('\nFAILURE: %s\n' % e)
       else:
         print('\nFAILURE\n')

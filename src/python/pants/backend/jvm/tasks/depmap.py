@@ -102,18 +102,14 @@ class Depmap(ConsoleTask):
     if self.project_info and self.is_graph:
       raise TaskError('-graph and -project-info are mutually exclusive; please choose one.')
     if self.project_info:
-      output = self.project_info_output(targets)
-      for line in output:
-        yield line
+      yield from self.project_info_output(targets)
       return
     for target in self.context.target_roots:
       if self._is_jvm(target) or isinstance(target, Dependencies):
         if self.is_graph:
-          for line in self._output_digraph(target):
-            yield line
+          yield from self._output_digraph(target)
         else:
-          for line in self._output_dependency_tree(target):
-            yield line
+          yield from self._output_dependency_tree(target)
       elif target.is_python:
         raise TaskError('Unsupported for Python targets')
       else:
@@ -135,33 +131,32 @@ class Depmap(ConsoleTask):
 
   def _output_dependency_tree(self, target):
     def output_dep(dep, indent):
-      return "%s%s" % (indent * "  ", dep)
+      return f'{indent * "  "}{dep}'
 
     def output_deps(dep, indent=0, outputted=set()):
       dep_id, _ = self._dep_id(dep)
       if dep_id in outputted:
-        return [output_dep("*%s" % dep_id, indent)] if not self.is_minimal else []
-      else:
-        output = []
-        if not self.is_external_only:
-          output += [output_dep(dep_id, indent)]
-          outputted.add(dep_id)
-          indent += 1
+        return [output_dep(f"*{dep_id}", indent)] if not self.is_minimal else []
+      output = []
+      if not self.is_external_only:
+        output += [output_dep(dep_id, indent)]
+        outputted.add(dep_id)
+        indent += 1
 
-        if self._is_jvm(dep) or isinstance(dep, Dependencies):
-          for internal_dep in dep.dependencies:
-            output += output_deps(internal_dep, indent, outputted)
+      if self._is_jvm(dep) or isinstance(dep, Dependencies):
+        for internal_dep in dep.dependencies:
+          output += output_deps(internal_dep, indent, outputted)
 
-        if not self.is_internal_only:
-          if self._is_jvm(dep):
-            for jar_dep in dep.jar_dependencies:
-              jar_dep_id, internal = self._dep_id(jar_dep)
-              if not internal:
-                if jar_dep_id not in outputted or (not self.is_minimal
-                                                   and not self.is_external_only):
-                  output += [output_dep(jar_dep_id, indent)]
-                  outputted.add(jar_dep_id)
-        return output
+      if not self.is_internal_only and self._is_jvm(dep):
+        for jar_dep in dep.jar_dependencies:
+          jar_dep_id, internal = self._dep_id(jar_dep)
+          if not internal and (jar_dep_id not in outputted or
+                               (not self.is_minimal
+                                and not self.is_external_only)):
+            output += [output_dep(jar_dep_id, indent)]
+            outputted.add(jar_dep_id)
+      return output
+
     return output_deps(target)
 
   def _output_digraph(self, target):
@@ -189,7 +184,7 @@ class Depmap(ConsoleTask):
         outputted.add(dep)
         output.append(output_dep(dep))
         if parent:
-          output.append('  "%s" -> "%s";' % (self._dep_id(parent)[0], self._dep_id(dep)[0]))
+          output.append(f'  "{self._dep_id(parent)[0]}" -> "{self._dep_id(dep)[0]}";')
 
         # TODO: This is broken. 'dependency' doesn't exist here, and we don't have
         # internal_dependencies any more anyway.
@@ -209,10 +204,12 @@ class Depmap(ConsoleTask):
             left_id = target_id if self.is_external_only else dep_id
             if (left_id, jar_id) not in outputted:
               styled = internal and not self.is_internal_only
-              output += ['  "%s" -> "%s"%s;' % (left_id, jar_id,
-                                                ' [style="dashed"]' if styled else '')]
+              output += [
+                  f"""  "{left_id}" -> "{jar_id}"{' [style="dashed"]' if styled else ''};"""
+              ]
               outputted.add((left_id, jar_id))
       return output
+
     header = ['digraph "%s" {' % target.id]
     graph_attr = ['  node [shape=rectangle, colorscheme=set312;];', '  rankdir=LR;']
     return header + graph_attr + output_deps(set(), target) + ['}']

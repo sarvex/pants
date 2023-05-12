@@ -31,13 +31,14 @@ class MockableSetupPyCommand(SetupPy):
 class TestSetupPy(BaseTest):
 
   def create_dependencies(self, depmap):
-    target_map = {}
-    for name, deps in depmap.items():
-      target_map[name] = self.make_target(
-        spec=name,
-        target_type=PythonLibrary,
-        provides=PythonArtifact(name=name, version='0.0.0')
-      )
+    target_map = {
+        name: self.make_target(
+            spec=name,
+            target_type=PythonLibrary,
+            provides=PythonArtifact(name=name, version='0.0.0'),
+        )
+        for name, deps in depmap.items()
+    }
     for name, deps in depmap.items():
       target = target_map[name]
       dep_targets = [target_map[name] for name in deps]
@@ -54,8 +55,8 @@ class TestSetupPy(BaseTest):
     self.assertEqual(SetupPy.minified_dependencies(target_map['bar']),
                      OrderedSet([target_map['baz']]))
     self.assertEqual(SetupPy.minified_dependencies(target_map['baz']), OrderedSet())
-    self.assertEqual(SetupPy.install_requires(target_map['foo']), set(['bar==0.0.0']))
-    self.assertEqual(SetupPy.install_requires(target_map['bar']), set(['baz==0.0.0']))
+    self.assertEqual(SetupPy.install_requires(target_map['foo']), {'bar==0.0.0'})
+    self.assertEqual(SetupPy.install_requires(target_map['bar']), {'baz==0.0.0'})
     self.assertEqual(SetupPy.install_requires(target_map['baz']), set([]))
 
   @classmethod
@@ -106,9 +107,10 @@ class TestSetupPy(BaseTest):
                      OrderedSet([target_map['bak']]))
     self.assertEqual(SetupPy.minified_dependencies(target_map['baz']),
                      OrderedSet([target_map['bak']]))
-    self.assertEqual(SetupPy.install_requires(target_map['foo']), set(['bar==0.0.0', 'baz==0.0.0']))
-    self.assertEqual(SetupPy.install_requires(target_map['bar']), set(['bak==0.0.0']))
-    self.assertEqual(SetupPy.install_requires(target_map['baz']), set(['bak==0.0.0']))
+    self.assertEqual(SetupPy.install_requires(target_map['foo']),
+                     {'bar==0.0.0', 'baz==0.0.0'})
+    self.assertEqual(SetupPy.install_requires(target_map['bar']), {'bak==0.0.0'})
+    self.assertEqual(SetupPy.install_requires(target_map['baz']), {'bak==0.0.0'})
 
   def test_binary_target_injected_into_minified_dependencies(self):
     foo_bin_dep = self.make_target(
@@ -178,7 +180,7 @@ class TestSetupPy(BaseTest):
 
     # TODO(pl): Why is this set ordered?  Does the order actually matter?
     assert SetupPy.minified_dependencies(bar) == OrderedSet([bar_bin, bar_bin_dep])
-    assert SetupPy.install_requires(bar) == set(['bar_bin_dep==0.0.0'])
+    assert SetupPy.install_requires(bar) == {'bar_bin_dep==0.0.0'}
     entry_points = dict(SetupPy.iter_entry_points(bar))
     assert entry_points == {'bar_binary': 'bar.bin.bar'}
 
@@ -261,7 +263,7 @@ def test_find_packages():
       p, n_p, r = SetupPy.find_packages(chroot)
       assert p == set(packages + namespace_packages)
       assert n_p == set(namespace_packages)
-      assert r == dict((k, set(v)) for (k, v) in resources.items())
+      assert r == {k: set(v) for (k, v) in resources.items()}
 
   # assert both packages and namespace packages work
   assert_single_chroot(['foo'], [], {})
@@ -283,21 +285,19 @@ def test_find_packages():
   with yield_chroot(['foo', 'foo.bar'], [], resources) as chroot:
     _, _, r = SetupPy.find_packages(chroot)
     assert r == {
-      'foo': set(['f0']),
-      'foo.bar': set([
-        os.path.join('baz', 'f1'),
-        os.path.join('baz', 'f2'),
-      ])
+        'foo': {'f0'},
+        'foo.bar': {os.path.join('baz', 'f1'),
+                    os.path.join('baz', 'f2')},
     }
 
   # assert that nearest submodule splits on module prefixes
   with yield_chroot(
-      ['foo', 'foo.bar'],
-      [],
-      {'foo.bar1': ['f0']}) as chroot:
+        ['foo', 'foo.bar'],
+        [],
+        {'foo.bar1': ['f0']}) as chroot:
 
     _, _, r = SetupPy.find_packages(chroot)
-    assert r == {'foo': set(['bar1/f0'])}
+    assert r == {'foo': {'bar1/f0'}}
 
 
 def test_nearest_subpackage():

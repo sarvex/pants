@@ -48,8 +48,10 @@ class BaseJarTaskTest(JarTaskTestBase):
     return self.prepare_execute(context, self.workdir)
 
   def assert_listing(self, jar, *expected_items):
-    self.assertEquals(set(['META-INF/', 'META-INF/MANIFEST.MF']) | set(expected_items),
-                      set(jar.namelist()))
+    self.assertEquals(
+        {'META-INF/', 'META-INF/MANIFEST.MF'} | set(expected_items),
+        set(jar.namelist()),
+    )
 
 
 class JarTaskTest(BaseJarTaskTest):

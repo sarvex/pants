@@ -63,8 +63,9 @@ class IvyTaskMixin(object):
     # ivy generates. We recompute this name from targets later in order to find that file.
     # TODO: This is fragile. Refactor so that we're not computing the name twice.
     if executor and not isinstance(executor, Executor):
-      raise ValueError('The executor must be an Executor instance, given %s of type %s'
-                       % (executor, type(executor)))
+      raise ValueError(
+          f'The executor must be an Executor instance, given {executor} of type {type(executor)}'
+      )
     ivy = Bootstrapper.default_ivy(java_executor=executor,
                                    bootstrap_workunit_factory=self.context.new_workunit)
     if not targets:
@@ -76,14 +77,14 @@ class IvyTaskMixin(object):
     fingerprint_strategy = IvyResolveFingerprintStrategy()
 
     with self.invalidated(targets,
-                          invalidate_dependents=True,
-                          silent=silent,
-                          fingerprint_strategy=fingerprint_strategy) as invalidation_check:
+                            invalidate_dependents=True,
+                            silent=silent,
+                            fingerprint_strategy=fingerprint_strategy) as invalidation_check:
       global_vts = VersionedTargetSet.from_versioned_targets(invalidation_check.all_vts)
       target_workdir = os.path.join(ivy_workdir, global_vts.cache_key.hash)
       target_classpath_file = os.path.join(target_workdir, 'classpath')
-      raw_target_classpath_file = target_classpath_file + '.raw'
-      raw_target_classpath_file_tmp = raw_target_classpath_file + '.tmp'
+      raw_target_classpath_file = f'{target_classpath_file}.raw'
+      raw_target_classpath_file_tmp = f'{raw_target_classpath_file}.tmp'
       # A common dir for symlinks into the ivy2 cache. This ensures that paths to jars
       # in artifact-cached analysis files are consistent across systems.
       # Note that we have one global, well-known symlink dir, again so that paths are
@@ -112,8 +113,9 @@ class IvyTaskMixin(object):
           exec_ivy()
 
         if not os.path.exists(raw_target_classpath_file_tmp):
-          raise TaskError('Ivy failed to create classpath file at %s'
-                          % raw_target_classpath_file_tmp)
+          raise TaskError(
+              f'Ivy failed to create classpath file at {raw_target_classpath_file_tmp}'
+          )
         shutil.move(raw_target_classpath_file_tmp, raw_target_classpath_file)
         logger.debug('Copied ivy classfile file to {dest}'.format(dest=raw_target_classpath_file))
 

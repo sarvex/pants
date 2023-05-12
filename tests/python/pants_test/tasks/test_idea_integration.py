@@ -63,10 +63,11 @@ class IdeaIntegrationTest(PantsRunIntegrationTest):
   def _get_new_module_root_manager(self, dom):
     module = dom.getElementsByTagName('module')[0]
     components = module.getElementsByTagName('component')
-    for component in components:
-      if component.getAttribute('name') == 'NewModuleRootManager':
-        return module.getElementsByTagName('content')[0]
-    return None
+    return next(
+        (module.getElementsByTagName('content')[0] for component in components
+         if component.getAttribute('name') == 'NewModuleRootManager'),
+        None,
+    )
 
   def _get_sourceFolders(self, dom):
     """Navigate the dom to return the list of all <sourceFolder> entries in the project file"""
@@ -104,12 +105,14 @@ class IdeaIntegrationTest(PantsRunIntegrationTest):
       iml_file = os.path.join(path, 'project.iml')
       self.assertTrue(os.path.exists(iml_file))
       dom = minidom.parse(iml_file)
-      expected_paths = ["file://" + os.path.join(get_buildroot(), path) for path in [
-        'examples/src/java/com/pants/example/hello',
-        'examples/src/java/com/pants/examples/hello/greet',
-        'examples/src/java/com/pants/examples/hello/main',
-        'examples/src/resources/com/pants/example/hello',
-      ]]
+      expected_paths = [
+          f"file://{os.path.join(get_buildroot(), path)}" for path in [
+              'examples/src/java/com/pants/example/hello',
+              'examples/src/java/com/pants/examples/hello/greet',
+              'examples/src/java/com/pants/examples/hello/main',
+              'examples/src/resources/com/pants/example/hello',
+          ]
+      ]
       remaining = set(expected_paths)
       for sourceFolder in self._get_sourceFolders(dom):
         found_source_content = True

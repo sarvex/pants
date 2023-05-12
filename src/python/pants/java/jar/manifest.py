@@ -25,10 +25,10 @@ class Manifest(object):
     with closing(StringIO(text)) as fp:
       yield fp.read(70)
       while True:
-        chunk = fp.read(69)
-        if not chunk:
+        if chunk := fp.read(69):
+          yield f' {chunk}'
+        else:
           return
-        yield ' %s' % chunk
 
   PATH = 'META-INF/MANIFEST.MF'
 
@@ -42,10 +42,10 @@ class Manifest(object):
 
   def addentry(self, header, value):
     if len(header) > 68:
-      raise ValueError('Header name must be 68 characters or less, given %s' % header)
+      raise ValueError(f'Header name must be 68 characters or less, given {header}')
     if self._contents:
       self._contents += '\n'
-    self._contents += '\n'.join(self._wrap('%s: %s' % (header, value)))
+    self._contents += '\n'.join(self._wrap(f'{header}: {value}'))
 
   def contents(self):
     padded = self._contents + '\n'

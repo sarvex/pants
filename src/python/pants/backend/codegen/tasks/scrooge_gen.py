@@ -60,7 +60,7 @@ _COMPILERS = [
                    langs=frozenset(['scala', 'java'])),
 ]
 
-_CONFIG_FOR_COMPILER = dict((compiler.name, compiler) for compiler in _COMPILERS)
+_CONFIG_FOR_COMPILER = {compiler.name: compiler for compiler in _COMPILERS}
 
 _TARGET_TYPE_FOR_LANG = dict(scala=ScalaLibrary, java=JavaLibrary)
 
@@ -97,10 +97,12 @@ class ScroogeGen(NailgunTask, JvmToolTaskMixin):
 
   def __init__(self, *args, **kwargs):
     super(ScroogeGen, self).__init__(*args, **kwargs)
-    self.compiler_for_name = dict((name, Compiler.from_config(self.context, config))
-                                  for name, config in _CONFIG_FOR_COMPILER.items())
+    self.compiler_for_name = {
+        name: Compiler.from_config(self.context, config)
+        for name, config in _CONFIG_FOR_COMPILER.items()
+    }
 
-    for name, compiler in self.compiler_for_name.items():
+    for compiler in self.compiler_for_name.values():
       self.register_jvm_tool_from_config(compiler.name, self.context.config,
                                          ini_section=compiler.config_section,
                                          ini_key='bootstrap-tools',
@@ -187,14 +189,13 @@ class ScroogeGen(NailgunTask, JvmToolTaskMixin):
         args.extend(['--language', partial_cmd.language])
 
         for lhs, rhs in partial_cmd.namespace_map:
-          args.extend(['--namespace-map', '%s=%s' % (lhs, rhs)])
+          args.extend(['--namespace-map', f'{lhs}={rhs}'])
 
-        if partial_cmd.rpc_style == 'ostrich':
-          args.append('--finagle')
-          args.append('--ostrich')
-        elif partial_cmd.rpc_style == 'finagle':
+        if partial_cmd.rpc_style == 'finagle':
           args.append('--finagle')
 
+        elif partial_cmd.rpc_style == 'ostrich':
+          args.extend(('--finagle', '--ostrich'))
         args.extend(['--dest', outdir])
         safe_mkdir(outdir)
 
@@ -216,14 +217,14 @@ class ScroogeGen(NailgunTask, JvmToolTaskMixin):
                                   args=args,
                                   workunit_name=compiler.name)
         try:
-          if 0 == returncode:
+          if returncode == 0:
             gen_files_for_source = self.parse_gen_file_map(gen_file_map_path, outdir)
           else:
             gen_files_for_source = None
         finally:
           os.remove(gen_file_map_path)
 
-        if 0 != returncode:
+        if returncode != 0:
           raise TaskError('java %s ... exited non-zero (%i)' % (compiler.main, returncode))
         self.write_gen_file_map(gen_files_for_source, invalid_targets, outdir)
 
@@ -249,7 +250,7 @@ class ScroogeGen(NailgunTask, JvmToolTaskMixin):
                                              default={'gen': key,
                                                       'deps': {'service': [], 'structs': []}})
       gen = gen_info['gen']
-      deps = dict()
+      deps = {}
       for category, depspecs in gen_info['deps'].items():
         dependencies = OrderedSet()
         deps[category] = dependencies
@@ -258,7 +259,7 @@ class ScroogeGen(NailgunTask, JvmToolTaskMixin):
             dependencies.update(self.context.resolve(depspec))
           except AddressLookupError as e:
             raise self.DepLookupError("{message}\n  referenced from [{section}] key: " \
-                                      "gen->deps->{category} in pants.ini".format(
+                                        "gen->deps->{category} in pants.ini".format(
                                         message=e, section='thrift-gen',
                                         key="{category}"
                                       ))
@@ -307,18 +308,19 @@ class ScroogeGen(NailgunTask, JvmToolTaskMixin):
     gen_file_map = defaultdict(set)
     for target in targets:
       target_gen_file_map = self.gen_file_map_for_target(target, outdir)
-      gen_file_map.update(target_gen_file_map)
+      gen_file_map |= target_gen_file_map
     return gen_file_map
 
   def write_gen_file_map_for_target(self, gen_file_map, target, outdir):
     def calc_srcs(target):
       _, srcs = calculate_compile_sources([target], self.is_gentarget)
       return srcs
+
     with safe_open(self.gen_file_map_path_for_target(target, outdir), 'w') as f:
       for src in sorted(calc_srcs(target)):
         clss = gen_file_map[src]
         for cls in sorted(clss):
-          print('%s -> %s' % (src, os.path.join(outdir, cls)), file=f)
+          print(f'{src} -> {os.path.join(outdir, cls)}', file=f)
 
   def write_gen_file_map(self, gen_file_map, targets, outdir):
     for target in targets:
@@ -334,7 +336,7 @@ class ScroogeGen(NailgunTask, JvmToolTaskMixin):
 
     language = self.defaults.get_language(target)
     if language not in self.compiler_for_name[compiler].langs:
-      raise TaskError('%s can not generate %s' % (compiler, language))
+      raise TaskError(f'{compiler} can not generate {language}')
 
     return True
 
@@ -384,19 +386,16 @@ def calculate_services(source):
   """
 
   with open(source, 'r') as thrift:
-    namespaces = dict()
+    namespaces = {}
     types = defaultdict(set)
     for line in thrift:
-      match = NAMESPACE_PARSER.match(line)
-      if match:
+      if match := NAMESPACE_PARSER.match(line):
         lang = match.group(1)
         namespace = match.group(2)
         namespaces[lang] = namespace
-      else:
-        match = TYPE_PARSER.match(line)
-        if match:
-          typename = match.group(1)
-          name = match.group(2)
-          types[typename].add(name)
+      elif match := TYPE_PARSER.match(line):
+        typename = match.group(1)
+        name = match.group(2)
+        types[typename].add(name)
 
     return types['service']

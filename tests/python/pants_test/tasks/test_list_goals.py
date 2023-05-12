@@ -36,46 +36,46 @@ class ListGoalsTest(ConsoleTaskTest):
     self.assert_console_output(self._INSTALLED_HEADER)
 
     TaskRegistrar(name=self._LIST_GOALS_NAME, action=ListGoals)\
-      .install().with_description(self._LIST_GOALS_DESC)
+        .install().with_description(self._LIST_GOALS_DESC)
     self.assert_console_output(
-      self._INSTALLED_HEADER,
-      '  %s: %s' % (self._LIST_GOALS_NAME, self._LIST_GOALS_DESC),
+        self._INSTALLED_HEADER,
+        f'  {self._LIST_GOALS_NAME}: {self._LIST_GOALS_DESC}',
     )
 
     TaskRegistrar(name=self._LLAMA_NAME, action=ListGoalsTest.LlamaTask)\
-      .install().with_description(self._LLAMA_DESC)
+        .install().with_description(self._LLAMA_DESC)
     self.assert_console_output(
-      self._INSTALLED_HEADER,
-      '  %s: %s' % (self._LIST_GOALS_NAME, self._LIST_GOALS_DESC),
-      '  %s: %s' % (self._LLAMA_NAME, self._LLAMA_DESC),
+        self._INSTALLED_HEADER,
+        f'  {self._LIST_GOALS_NAME}: {self._LIST_GOALS_DESC}',
+        f'  {self._LLAMA_NAME}: {self._LLAMA_DESC}',
     )
 
     TaskRegistrar(name=self._ALPACA_NAME, action=ListGoalsTest.AlpacaTask, dependencies=[self._LLAMA_NAME])\
-      .install()
+        .install()
     self.assert_console_output(
-      self._INSTALLED_HEADER,
-      '  %s: %s' % (self._LIST_GOALS_NAME, self._LIST_GOALS_DESC),
-      '  %s: %s' % (self._LLAMA_NAME, self._LLAMA_DESC),
+        self._INSTALLED_HEADER,
+        f'  {self._LIST_GOALS_NAME}: {self._LIST_GOALS_DESC}',
+        f'  {self._LLAMA_NAME}: {self._LLAMA_DESC}',
     )
 
   def test_list_goals_all(self):
     Goal.clear()
 
     TaskRegistrar(name=self._LIST_GOALS_NAME, action=ListGoals)\
-      .install().with_description(self._LIST_GOALS_DESC)
+        .install().with_description(self._LIST_GOALS_DESC)
     TaskRegistrar(name=self._LLAMA_NAME, action=ListGoalsTest.LlamaTask)\
-      .install().with_description(self._LLAMA_DESC)
+        .install().with_description(self._LLAMA_DESC)
     TaskRegistrar(name=self._ALPACA_NAME, action=ListGoalsTest.AlpacaTask, dependencies=[self._LLAMA_NAME])\
-      .install()
+        .install()
 
     self.assert_console_output(
-      self._INSTALLED_HEADER,
-      '  %s: %s' % (self._LIST_GOALS_NAME, self._LIST_GOALS_DESC),
-      '  %s: %s' % (self._LLAMA_NAME, self._LLAMA_DESC),
-      '',
-      self._UNDOCUMENTED_HEADER,
-      '  %s' % self._ALPACA_NAME,
-      args=['--test-all'],
+        self._INSTALLED_HEADER,
+        f'  {self._LIST_GOALS_NAME}: {self._LIST_GOALS_DESC}',
+        f'  {self._LLAMA_NAME}: {self._LLAMA_DESC}',
+        '',
+        self._UNDOCUMENTED_HEADER,
+        f'  {self._ALPACA_NAME}',
+        args=['--test-all'],
     )
 
   def test_list_goals_graph(self):

@@ -83,10 +83,12 @@ class JarPublishIntegrationTest(PantsRunIntegrationTest):
 
   def test_named_snapshot(self):
     name = "abcdef0123456789"
-    self.publish_test('testprojects/src/java/com/pants/testproject/publish/hello/greet',
-                      shared_artifacts(name),
-                      ['com.pants.testproject.publish/hello-greet/publish.properties'],
-                      extra_options=['--publish-named-snapshot=%s' % name])
+    self.publish_test(
+        'testprojects/src/java/com/pants/testproject/publish/hello/greet',
+        shared_artifacts(name),
+        ['com.pants.testproject.publish/hello-greet/publish.properties'],
+        extra_options=[f'--publish-named-snapshot={name}'],
+    )
 
   # Collect all the common factors for running a publish_extras test, and execute the test.
   def publish_extras_runner(self, extra_config=None, artifact_name=None, success_expected=True):
@@ -163,10 +165,12 @@ class JarPublishIntegrationTest(PantsRunIntegrationTest):
     :param extra_env: Extra environment variables for the pants run."""
 
     with temporary_dir() as publish_dir:
-      options = ['--publish-local=%s' % publish_dir,
-                 '--no-publish-dryrun',
-                 '--publish-force',
-                 '--print-exception-stacktrace',]
+      options = [
+          f'--publish-local={publish_dir}',
+          '--no-publish-dryrun',
+          '--publish-force',
+          '--print-exception-stacktrace',
+      ]
       if extra_options:
         options.extend(extra_options)
 

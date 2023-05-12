@@ -109,13 +109,13 @@ class RESTfulArtifactCache(ArtifactCache):
 
     try:
       response = None
-      if 'PUT' == method:
+      if method == 'PUT':
         response = session.put(url, data=body, timeout=self._timeout_secs)
-      elif 'GET' == method:
+      elif method == 'GET':
         response = session.get(url, timeout=self._timeout_secs, stream=True)
-      elif 'HEAD' == method:
+      elif method == 'HEAD':
         response = session.head(url, timeout=self._timeout_secs)
-      elif 'DELETE' == method:
+      elif method == 'DELETE':
         response = session.delete(url, timeout=self._timeout_secs)
       else:
         raise ValueError('Unknown request method {0}'.format(method))
@@ -135,7 +135,5 @@ class RESTfulArtifactCache(ArtifactCache):
       raise NonfatalArtifactCacheError(e)
 
   def _url_string(self, path):
-    proto = 'http'
-    if self._ssl:
-      proto = 'https'
+    proto = 'https' if self._ssl else 'http'
     return '{0}://{1}{2}'.format(proto, self._netloc, path)

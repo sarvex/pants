@@ -86,11 +86,7 @@ class Semver(Version):
     return Semver(self.major, self.minor, self.patch, snapshot=True)
 
   def version(self):
-    return '%s.%s.%s' % (
-      self.major,
-      self.minor,
-      ('%s-SNAPSHOT' % self.patch) if self.snapshot else self.patch
-    )
+    return f"{self.major}.{self.minor}.{f'{self.patch}-SNAPSHOT' if self.snapshot else self.patch}"
 
   def __eq__(self, other):
     return self.__cmp__(other) == 0
@@ -99,19 +95,19 @@ class Semver(Version):
     diff = self.major - other.major
     if not diff:
       diff = self.minor - other.minor
-      if not diff:
-        diff = self.patch - other.patch
-        if not diff:
-          if self.snapshot and not other.snapshot:
-            diff = 1
-          elif not self.snapshot and other.snapshot:
-            diff = -1
-          else:
-            diff = 0
+    if not diff:
+      diff = self.patch - other.patch
+    if not diff:
+      if self.snapshot and not other.snapshot:
+        diff = 1
+      elif not self.snapshot and other.snapshot:
+        diff = -1
+      else:
+        diff = 0
     return diff
 
   def __repr__(self):
-    return 'Semver(%s)' % self.version()
+    return f'Semver({self.version()})'
 
 
 class ScmPublish(object):
@@ -124,15 +120,17 @@ class ScmPublish(object):
       if self.restrict_push_branches:
         branch = self.scm.branch_name
         if branch not in self.restrict_push_branches:
-          raise TaskError('Can only push from %s, currently on branch: %s' % (
-            ' '.join(sorted(self.restrict_push_branches)), branch
-          ))
+          raise TaskError(
+              f"Can only push from {' '.join(sorted(self.restrict_push_branches))}, currently on branch: {branch}"
+          )
 
-      changed_files = self.scm.changed_files()
-      if changed_files:
-        raise TaskError('Can only push from a clean branch, found : %s' % ' '.join(changed_files))
+      if changed_files := self.scm.changed_files():
+        raise TaskError(
+            f"Can only push from a clean branch, found : {' '.join(changed_files)}"
+        )
     else:
-      print('Skipping check for a clean %s in test mode.' % self.scm.branch_name)
+      print(f'Skipping check for a clean {self.scm.branch_name} in test mode.')
 
   def commit_pushdb(self, coordinates):
-    self.scm.commit('pants build committing publish data for push of %s' % coordinates)
+    self.scm.commit(
+        f'pants build committing publish data for push of {coordinates}')

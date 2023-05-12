@@ -60,15 +60,7 @@ class DxCompile(AndroidTask, NailgunTask):
 
   def _render_args(self, out, classes):
     dex_file = os.path.join(out, self.DEX_NAME)
-    args = []
-    # Glossary of dx.jar flags.
-    #   : '--dex' to create a Dalvik executable.
-    #   : '--no-strict' allows the dx.jar to skip verifying the package path. This allows us to
-    #            pass a list of classes as opposed to a top-level dir.
-    #   : '--output' tells the dx.jar where to put and what to name the created file.
-    #            See comment on self.classes_dex for restrictions.
-    args.extend(['--dex', '--no-strict', '--output=' + dex_file])
-
+    args = ['--dex', '--no-strict', f'--output={dex_file}']
     # classes is a list of class files to be included in the created dex file.
     args.extend(classes)
     return args

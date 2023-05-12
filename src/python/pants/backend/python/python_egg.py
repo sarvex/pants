@@ -40,6 +40,6 @@ def PythonEgg(glob, name=None):
     requirements.add(dist.as_requirement())
 
   if len(requirements) > 1:
-    raise ValueError('Got multiple egg versions! => %s' % requirements)
+    raise ValueError(f'Got multiple egg versions! => {requirements}')
 
   return PythonRequirement(str(requirements.pop()), name=name)

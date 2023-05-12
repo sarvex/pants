@@ -32,9 +32,8 @@ class Revision(object):
     def parse_extra(delimiter, value):
       if not value:
         return None, None
-      else:
-        components = value.split(delimiter, 1)
-        return components[0], None if len(components) == 1 else components[1]
+      components = value.split(delimiter, 1)
+      return components[0], None if len(components) == 1 else components[1]
 
     def parse_patch(patch):
       patch, pre_release = parse_extra('-', patch)
@@ -59,7 +58,7 @@ class Revision(object):
       components.extend(parse_components(build))
       return cls(*components)
     except ValueError:
-      raise cls.BadRevision("Failed to parse '%s' as a semantic version number" % rev)
+      raise cls.BadRevision(f"Failed to parse '{rev}' as a semantic version number")
 
   @classmethod
   def lenient(cls, rev):
@@ -86,4 +85,4 @@ class Revision(object):
     return 0
 
   def __repr__(self):
-    return '%s(%s)' % (self.__class__.__name__, ', '.join(map(repr, self._components)))
+    return f"{self.__class__.__name__}({', '.join(map(repr, self._components))})"

@@ -68,7 +68,7 @@ class AntlrGen(CodeGen, NailgunTask, JvmToolTaskMixin):
 
   def genlang(self, lang, targets):
     if lang != 'java':
-      raise TaskError('Unrecognized antlr gen lang: %s' % lang)
+      raise TaskError(f'Unrecognized antlr gen lang: {lang}')
 
     # TODO: Instead of running the compiler for each target, collect the targets
     # by type and invoke it twice, once for antlr3 and once for antlr4.
@@ -85,17 +85,14 @@ class AntlrGen(CodeGen, NailgunTask, JvmToolTaskMixin):
           logger.warn("The 'package' attribute is not supported for antlr3 and will be ignored.")
         java_main = 'org.antlr.Tool'
       elif target.compiler == 'antlr4':
-        args.append('-visitor')  # Generate Parse Tree Visitor As Well
-        # Note that this assumes that there is no package set in the antlr file itself,
-        # which is considered an ANTLR best practice.
-        args.append('-package')
+        args.extend(('-visitor', '-package'))
         if target.package is None:
           args.append(self._get_sources_package(target))
         else:
           args.append(target.package)
         java_main = 'org.antlr.v4.Tool'
       else:
-        raise TaskError('Unknown ANTLR compiler: {}'.format(target.compiler))
+        raise TaskError(f'Unknown ANTLR compiler: {target.compiler}')
 
       sources = self._calculate_sources([target])
       args.extend(sources)
@@ -109,7 +106,7 @@ class AntlrGen(CodeGen, NailgunTask, JvmToolTaskMixin):
   # they do, uses that as the package. If they are different, then the user will need to set the package
   # as it cannot be correctly inferred.
   def _get_sources_package(self, target):
-    parents = set([os.path.dirname(source) for source in target.sources])
+    parents = {os.path.dirname(source) for source in target.sources}
     if len(parents) != 1:
       raise TaskError('Antlr sources in multiple directories, cannot infer package.'
                       'Please set package member in antlr target.')
@@ -127,7 +124,7 @@ class AntlrGen(CodeGen, NailgunTask, JvmToolTaskMixin):
 
   def createtarget(self, lang, gentarget, dependees):
     if lang != 'java':
-      raise TaskError('Unrecognized antlr gen lang: %s' % lang)
+      raise TaskError(f'Unrecognized antlr gen lang: {lang}')
     return self._create_java_target(gentarget, dependees)
 
   def _create_java_target(self, target, dependees):
@@ -141,9 +138,7 @@ class AntlrGen(CodeGen, NailgunTask, JvmToolTaskMixin):
       # Antlr enforces that generated sources are relative to the base filename, and that
       # each grammar filename must match the resulting grammar Lexer and Parser classes.
       source_base, source_ext = os.path.splitext(source)
-      for suffix in antlr_files_suffix:
-        generated_sources.append(source_base + suffix)
-
+      generated_sources.extend(source_base + suffix for suffix in antlr_files_suffix)
     deps = self._resolve_java_deps(target)
 
     syn_target_sourceroot = os.path.join(self._java_out(target), target.target_base)

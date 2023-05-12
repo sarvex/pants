@@ -53,7 +53,8 @@ class RunTracker(object):
   @classmethod
   def from_config(cls, config):
     if not isinstance(config, Config):
-      raise ValueError('Expected a Config object, given %s of type %s' % (config, type(config)))
+      raise ValueError(
+          f'Expected a Config object, given {config} of type {type(config)}')
     info_dir = RunInfo.dir(config)
     stats_upload_url = config.getdefault('stats_upload_url', default=None)
     stats_upload_timeout = config.getdefault('stats_upload_timeout', default=2)
@@ -225,7 +226,10 @@ class RunTracker(object):
     """Send timing results to URL specified in pants.ini"""
     def error(msg):
       # Report aleady closed, so just print error.
-      print("WARNING: Failed to upload stats to %s due to %s" % (self.stats_url, msg), file=sys.stderr)
+      print(
+          f"WARNING: Failed to upload stats to {self.stats_url} due to {msg}",
+          file=sys.stderr,
+      )
 
     if self.stats_url:
       params = {
@@ -247,7 +251,7 @@ class RunTracker(object):
         if resp.status != 200:
           error("HTTP error code: %d" % resp.status)
       except Exception as e:
-        error("Error: %s" % e)
+        error(f"Error: {e}")
 
   def end(self):
     """This pants run is over, so stop tracking it.

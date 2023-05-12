@@ -64,10 +64,11 @@ class NailgunTaskBase(TaskBase, JvmToolTaskMixin):
     """
     if self.nailgun_is_enabled and self.get_options().ng_daemons:
       classpath = os.pathsep.join(self.tool_classpath(self._nailgun_bootstrap_key))
-      client = NailgunExecutor(self._executor_workdir, classpath, distribution=self._dist)
+      return NailgunExecutor(self._executor_workdir,
+                             classpath,
+                             distribution=self._dist)
     else:
-      client = SubprocessExecutor(self._dist)
-    return client
+      return SubprocessExecutor(self._dist)
 
   @property
   def jvm_args(self):

@@ -38,7 +38,7 @@ class WorkUnit(object):
   def choose_for_outcome(outcome, aborted_val, failure_val, warning_val, success_val, unknown_val):
     """Returns one of the 5 arguments, depending on the outcome."""
     if outcome not in range(0, 5):
-      raise Exception('Invalid outcome: %s' % outcome)
+      raise Exception(f'Invalid outcome: {outcome}')
     return (aborted_val, failure_val, warning_val, success_val, unknown_val)[outcome]
 
   @staticmethod
@@ -144,9 +144,10 @@ class WorkUnit(object):
     """Returns the output buffer for the specified output name (e.g., 'stdout')."""
     m = WorkUnit._valid_name_re.match(name)
     if not m or m.group(0) != name:
-      raise Exception('Invalid output name: %s' % name)
+      raise Exception(f'Invalid output name: {name}')
     if name not in self._outputs:
-      path = os.path.join(self.run_tracker.info_dir, 'tool_outputs', '%s.%s' % (self.id, name))
+      path = os.path.join(self.run_tracker.info_dir, 'tool_outputs',
+                          f'{self.id}.{name}')
       safe_mkdir_for(path)
       self._outputs[name] = FileBackedRWBuf(path)
     return self._outputs[name]
@@ -212,4 +213,4 @@ class WorkUnit(object):
 
   def _self_time(self):
     """Returns the time spent in this workunit outside of any children."""
-    return self.duration() - sum([child.duration() for child in self.children])
+    return self.duration() - sum(child.duration() for child in self.children)

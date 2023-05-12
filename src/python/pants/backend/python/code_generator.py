@@ -42,10 +42,10 @@ class CodeGenerator(object):
     return path.replace(os.path.sep, '.')
 
   def package_name(self):
-    return '%s%s' % (self.target.id, self.suffix)
+    return f'{self.target.id}{self.suffix}'
 
   def requirement_string(self):
-    return '%s==0.0.0' % self.package_name()
+    return f'{self.package_name()}==0.0.0'
 
   @property
   def package_dir(self):

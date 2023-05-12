@@ -26,8 +26,7 @@ class Command(object):
   @classmethod
   def _register(cls):
     """Register a command class."""
-    command_name = cls.__dict__.get('__command__', None)
-    if command_name:
+    if command_name := cls.__dict__.get('__command__', None):
       Command._commands[command_name] = cls
 
   def __init__(self,

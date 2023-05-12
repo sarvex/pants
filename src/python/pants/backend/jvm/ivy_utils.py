@@ -128,8 +128,7 @@ class IvyUtils(object):
       new_paths.append(symlink)
     with safe_open(outpath, 'w') as outfile:
       outfile.write(':'.join(new_paths))
-    symlink_map = dict(zip(paths, new_paths))
-    return symlink_map
+    return dict(zip(paths, new_paths))
 
   @staticmethod
   def identify(targets):
@@ -144,7 +143,7 @@ class IvyUtils(object):
     """The path to the xml report ivy creates after a retrieve."""
     org, name = cls.identify(targets)
     cachedir = Bootstrapper.instance().ivy_cache_dir
-    return os.path.join(cachedir, '%s-%s-%s.xml' % (org, name, conf))
+    return os.path.join(cachedir, f'{org}-{name}-{conf}.xml')
 
   @classmethod
   def parse_xml_report(cls, targets, conf):
@@ -161,15 +160,19 @@ class IvyUtils(object):
       name = module.get('name')
       for revision in module.findall('revision'):
         rev = revision.get('name')
-        artifacts = []
-        for artifact in revision.findall('artifacts/artifact'):
-          artifacts.append(IvyArtifact(path=artifact.get('location'),
-                                       classifier=artifact.get('extra-classifier')))
-        callers = []
-        for caller in revision.findall('caller'):
-          callers.append(IvyModuleRef(caller.get('organisation'),
-                                      caller.get('name'),
-                                      caller.get('callerrev')))
+        artifacts = [
+            IvyArtifact(
+                path=artifact.get('location'),
+                classifier=artifact.get('extra-classifier'),
+            ) for artifact in revision.findall('artifacts/artifact')
+        ]
+        callers = [
+            IvyModuleRef(
+                caller.get('organisation'),
+                caller.get('name'),
+                caller.get('callerrev'),
+            ) for caller in revision.findall('caller')
+        ]
         ret.add_module(IvyModule(IvyModuleRef(org, name, rev), artifacts, callers))
     return ret
 
@@ -252,52 +255,49 @@ class IvyUtils(object):
 
   def _resolve_conflict(self, existing, proposed):
     if proposed == existing:
-      if proposed.force:
-        return proposed
-      return existing
+      return proposed if proposed.force else existing
     elif existing.force and proposed.force:
-      raise TaskError('Cannot force %s#%s to both rev %s and %s' % (
-        proposed.org, proposed.name, existing.rev, proposed.rev
-      ))
+      raise TaskError(
+          f'Cannot force {proposed.org}#{proposed.name} to both rev {existing.rev} and {proposed.rev}'
+      )
     elif existing.force:
-      self._log.debug('Ignoring rev %s for %s#%s already forced to %s' % (
-        proposed.rev, proposed.org, proposed.name, existing.rev
-      ))
+      self._log.debug(
+          f'Ignoring rev {proposed.rev} for {proposed.org}#{proposed.name} already forced to {existing.rev}'
+      )
       return existing
     elif proposed.force:
-      self._log.debug('Forcing %s#%s from %s to %s' % (
-        proposed.org, proposed.name, existing.rev, proposed.rev
-      ))
+      self._log.debug(
+          f'Forcing {proposed.org}#{proposed.name} from {existing.rev} to {proposed.rev}'
+      )
       return proposed
     else:
       try:
-        if Revision.lenient(proposed.rev) > Revision.lenient(existing.rev):
-          self._log.debug('Upgrading %s#%s from rev %s  to %s' % (
-            proposed.org, proposed.name, existing.rev, proposed.rev,
-          ))
-          return proposed
-        else:
+        if Revision.lenient(proposed.rev) <= Revision.lenient(existing.rev):
           return existing
+        self._log.debug(
+            f'Upgrading {proposed.org}#{proposed.name} from rev {existing.rev}  to {proposed.rev}'
+        )
+        return proposed
       except Revision.BadRevision as e:
         raise TaskError('Failed to parse jar revision', e)
 
   def _is_mutable(self, jar):
-    if jar.mutable is not None:
-      return jar.mutable
-    return False
+    return jar.mutable if jar.mutable is not None else False
 
   def _generate_jar_template(self, jar, confs):
-    template = TemplateData(
+    return TemplateData(
         org=jar.org,
         module=jar.name,
         version=jar.rev,
         mutable=self._is_mutable(jar),
         force=jar.force,
-        excludes=[self._generate_exclude_template(exclude) for exclude in jar.excludes],
+        excludes=[
+            self._generate_exclude_template(exclude) for exclude in jar.excludes
+        ],
         transitive=jar.transitive,
         artifacts=jar.artifacts,
-        configurations=[conf for conf in jar.configurations if conf in confs])
-    return template
+        configurations=[conf for conf in jar.configurations if conf in confs],
+    )
 
   def mapto_dir(self):
     """Subclasses can override to establish an isolated jar mapping directory."""
@@ -361,8 +361,9 @@ class IvyUtils(object):
 
     ivy = ivy or Bootstrapper.default_ivy()
     if not isinstance(ivy, Ivy):
-      raise ValueError('The ivy argument supplied must be an Ivy instance, given %s of type %s'
-                       % (ivy, type(ivy)))
+      raise ValueError(
+          f'The ivy argument supplied must be an Ivy instance, given {ivy} of type {type(ivy)}'
+      )
 
     ivyxml = os.path.join(target_workdir, 'ivy.xml')
 

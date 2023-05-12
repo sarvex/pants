@@ -55,15 +55,18 @@ class ReverseDepmapTest(BaseReverseDepmapTest):
     super(ReverseDepmapTest, self).setUp()
 
     def add_to_build_file(path, name, alias=False, deps=()):
-      self.add_to_build_file(path, dedent('''
+      self.add_to_build_file(
+          path,
+          dedent(('''
           %(type)s(name='%(name)s',
             dependencies=[%(deps)s]
           )
           ''' % dict(
-        type='target' if alias else 'python_library',
-        name=name,
-        deps=','.join("'%s'" % dep for dep in list(deps)))
-      ))
+              type='target' if alias else 'python_library',
+              name=name,
+              deps=','.join(f"'{dep}'" for dep in list(deps)),
+          ))),
+      )
 
     add_to_build_file('common/a', 'a', deps=['common/d'])
     add_to_build_file('common/b', 'b')

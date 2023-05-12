@@ -53,5 +53,4 @@ class TestNetrcUtil(object):
   def netrc(self, netrc_contents):
     m = mock_open(read_data=netrc_contents)
     with patch('__builtin__.open', m):
-      netrc = Netrc()
-      yield netrc
+      yield Netrc()

@@ -17,7 +17,7 @@ class DoubleDagNode(object):
     self.children = set()
 
   def __repr__(self):
-    return "Node(%s)" % self.data.id
+    return f"Node({self.data.id})"
 
 
 class DoubleDag(object):
@@ -77,18 +77,18 @@ class DoubleDag(object):
     for debugging."""
     def short_id(node):
       return node.short_id
+
     def id(node):
       return node.data.id
 
     node_fn = short_id if use_short_ids else id
     self._logger.debug("deps = {")
     for node in self.nodes:
-      self._logger.debug(
-        """  "%s": {"num": %d, "children": [%s]},""" % (
+      self._logger.debug(("""  "%s": {"num": %d, "children": [%s]},""" % (
           node_fn(node),
           node.data.num_sources,
-          ','.join(['"%s"' % node_fn(child) for child in node.children]))
-      )
+          ','.join([f'"{node_fn(child)}"' for child in node.children]),
+      )))
     self._logger.debug('}')
     self._logger.debug('')
 
@@ -129,7 +129,7 @@ class DoubleDag(object):
     new_leaves = set()
     for node in nodes:
       if node not in self.nodes:
-        raise Exception("Attempting to remove invalid node: %s" % node.data.id)
+        raise Exception(f"Attempting to remove invalid node: {node.data.id}")
       for parent_node in node.parents:
         if parent_node in nodes:
           continue

@@ -48,7 +48,8 @@ def create_config(sample_ini=''):
   :param dict defaults: An optional dict of global default ini values to seed.
   """
   if not isinstance(sample_ini, Compatibility.string):
-    raise ValueError('The sample_ini supplied must be a string, given: %s' % sample_ini)
+    raise ValueError(
+        f'The sample_ini supplied must be a string, given: {sample_ini}')
 
   parser = Config.create_parser()
   with io.BytesIO(sample_ini.encode('utf-8')) as ini:

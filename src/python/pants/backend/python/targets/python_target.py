@@ -72,9 +72,10 @@ class PythonTarget(Target):
     self._synthetic_resources_target = None
 
     if provides and not isinstance(provides, PythonArtifact):
-      raise TargetDefinitionException(self,
-        "Target must provide a valid pants setup_py object. Received a '%s' object instead." %
-          provides.__class__.__name__)
+      raise TargetDefinitionException(
+          self,
+          f"Target must provide a valid pants setup_py object. Received a '{provides.__class__.__name__}' object instead.",
+      )
 
     self._provides = provides
 
@@ -117,8 +118,9 @@ class PythonTarget(Target):
       def get_target(spec):
         tgt = self._build_graph.get_target_from_spec(spec)
         if tgt is None:
-          raise TargetDefinitionException(self, 'No such resource target: %s' % spec)
+          raise TargetDefinitionException(self, f'No such resource target: {spec}')
         return tgt
+
       resource_targets.extend(map(get_target, self._resource_target_specs))
 
     if self.payload.resources.source_paths:
@@ -136,7 +138,7 @@ class PythonTarget(Target):
 
   def _synthesize_resources_target(self):
     # Create an address for the synthetic target.
-    spec = self.address.spec + '_synthetic_resources'
+    spec = f'{self.address.spec}_synthetic_resources'
     synthetic_address = SyntheticAddress.parse(spec=spec)
     # For safety, ensure an address that's not used already, even though that's highly unlikely.
     while self._build_graph.contains_address(synthetic_address):

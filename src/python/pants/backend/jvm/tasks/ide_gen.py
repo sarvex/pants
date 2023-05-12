@@ -247,11 +247,10 @@ class IdeGen(JvmBinaryTask, JvmToolTaskMixin):
     internal_jars = self.context.products.get('jars')
     internal_source_jars = self.context.products.get('source_jars')
     for target in targets:
-      mappings = internal_jars.get(target)
-      if mappings:
+      if mappings := internal_jars.get(target):
         for base, jars in mappings.items():
           if len(jars) != 1:
-            raise IdeGen.Error('Unexpected mapping, multiple jars for %s: %s' % (target, jars))
+            raise IdeGen.Error(f'Unexpected mapping, multiple jars for {target}: {jars}')
 
           jar = jars[0]
           cp_jar = os.path.join(internal_jar_dir, jar)
@@ -263,7 +262,7 @@ class IdeGen(JvmBinaryTask, JvmToolTaskMixin):
             for base, jars in mappings.items():
               if len(jars) != 1:
                 raise IdeGen.Error(
-                  'Unexpected mapping, multiple source jars for %s: %s' % (target, jars)
+                    f'Unexpected mapping, multiple source jars for {target}: {jars}'
                 )
               jar = jars[0]
               cp_source_jar = os.path.join(internal_source_jar_dir, jar)
@@ -288,8 +287,8 @@ class IdeGen(JvmBinaryTask, JvmToolTaskMixin):
     for info_group in ivy_products.values():
       for info in info_group:
         for module in info.modules_by_ref.values():
-          for artifact in module.artifacts:
-            classpath_maps.append({'default': artifact.path})
+          classpath_maps.extend({'default': artifact.path}
+                                for artifact in module.artifacts)
     return classpath_maps
 
   def map_external_jars(self):
@@ -304,8 +303,7 @@ class IdeGen(JvmBinaryTask, JvmToolTaskMixin):
 
     confs = ['default', 'sources', 'javadoc']
     for entry in self._get_jar_paths(confs=confs):
-      jar = entry.get('default')
-      if jar:
+      if jar := entry.get('default'):
         cp_jar = os.path.join(external_jar_dir, os.path.basename(jar))
         shutil.copy(jar, cp_jar)
 
@@ -435,7 +433,7 @@ class Project(object):
       source_root = SourceRoot.find_by_path(query)
       if not source_root:
         collapsed_source_sets.append(source)
-      elif not source_root in roots_found:
+      elif source_root not in roots_found:
         roots_found.add(source_root)
         collapsed_source_sets.append(SourceSet(source.root_dir, source_root, "", source.is_test))
     return collapsed_source_sets
@@ -505,7 +503,7 @@ class Project(object):
 
     def configure_source_sets(relative_base, sources, is_test):
       absolute_base = os.path.join(self.root_dir, relative_base)
-      paths = set([os.path.dirname(source) for source in sources])
+      paths = {os.path.dirname(source) for source in sources}
       for path in paths:
         absolute_path = os.path.join(absolute_base, path)
         # Note, this can add duplicate source paths to self.sources().  We'll de-dup them later,
@@ -522,47 +520,48 @@ class Project(object):
       return dirs
 
     def configure_target(target):
-      if target not in analyzed:
-        analyzed.add(target)
-        self.has_scala = not self.skip_scala and (self.has_scala or is_scala(target))
+      if target in analyzed:
+        return
+      analyzed.add(target)
+      self.has_scala = not self.skip_scala and (self.has_scala or is_scala(target))
 
-        # Hack for java_sources and Eclipse/IntelliJ: add java_sources to project
-        if isinstance(target, ScalaLibrary):
-          for java_source in target.java_sources:
-            configure_target(java_source)
+      # Hack for java_sources and Eclipse/IntelliJ: add java_sources to project
+      if isinstance(target, ScalaLibrary):
+        for java_source in target.java_sources:
+          configure_target(java_source)
 
-        if target.has_resources:
-          resources_by_basedir = defaultdict(set)
-          for resources in target.resources:
-            resources_by_basedir[target.target_base].update(relative_sources(resources))
-          for basedir, resources in resources_by_basedir.items():
-            self.resource_extensions.update(Project.extract_resource_extensions(resources))
-            configure_source_sets(basedir, resources, is_test=target.is_test)
+      if target.has_resources:
+        resources_by_basedir = defaultdict(set)
+        for resources in target.resources:
+          resources_by_basedir[target.target_base].update(relative_sources(resources))
+        for basedir, resources in resources_by_basedir.items():
+          self.resource_extensions.update(Project.extract_resource_extensions(resources))
+          configure_source_sets(basedir, resources, is_test=target.is_test)
 
-        if target.has_sources():
-          test = target.is_test
-          self.has_tests = self.has_tests or test
-          base = target.target_base
-          configure_source_sets(base, relative_sources(target), is_test=test)
+      if target.has_sources():
+        test = target.is_test
+        self.has_tests = self.has_tests or test
+        base = target.target_base
+        configure_source_sets(base, relative_sources(target), is_test=test)
 
-        # Other BUILD files may specify sources in the same directory as this target. Those BUILD
-        # files might be in parent directories (globs('a/b/*.java')) or even children directories if
-        # this target globs children as well.  Gather all these candidate BUILD files to test for
-        # sources they own that live in the directories this targets sources live in.
-        target_dirset = find_source_basedirs(target)
-        if target.address.is_synthetic:
-          return [] # Siblings don't make sense for synthetic addresses.
-        candidates = self.target_util.get_all_addresses(target.address.build_file)
-        for ancestor in target.address.build_file.ancestors():
-          candidates.update(self.target_util.get_all_addresses(ancestor))
-        for sibling in target.address.build_file.siblings():
-          candidates.update(self.target_util.get_all_addresses(sibling))
-        for descendant in target.address.build_file.descendants():
-          candidates.update(self.target_util.get_all_addresses(descendant))
-        def is_sibling(target):
-          return source_target(target) and target_dirset.intersection(find_source_basedirs(target))
+      # Other BUILD files may specify sources in the same directory as this target. Those BUILD
+      # files might be in parent directories (globs('a/b/*.java')) or even children directories if
+      # this target globs children as well.  Gather all these candidate BUILD files to test for
+      # sources they own that live in the directories this targets sources live in.
+      target_dirset = find_source_basedirs(target)
+      if target.address.is_synthetic:
+        return [] # Siblings don't make sense for synthetic addresses.
+      candidates = self.target_util.get_all_addresses(target.address.build_file)
+      for ancestor in target.address.build_file.ancestors():
+        candidates.update(self.target_util.get_all_addresses(ancestor))
+      for sibling in target.address.build_file.siblings():
+        candidates.update(self.target_util.get_all_addresses(sibling))
+      for descendant in target.address.build_file.descendants():
+        candidates.update(self.target_util.get_all_addresses(descendant))
+      def is_sibling(target):
+        return source_target(target) and target_dirset.intersection(find_source_basedirs(target))
 
-        return filter(is_sibling, [self.target_util.get(a) for a in candidates if a != target.address])
+      return filter(is_sibling, [self.target_util.get(a) for a in candidates if a != target.address])
 
     for target in self.targets:
       target.walk(configure_target, predicate=source_target)

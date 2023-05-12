@@ -29,14 +29,14 @@ class InterpreterSelectionIntegrationTest(PantsRunIntegrationTest):
 
   def _maybe_test_version(self, version):
     if self.has_python_version(version):
-      print('Found python %s. Testing interpreter selection against it.' % version)
+      print(f'Found python {version}. Testing interpreter selection against it.')
       echo = self._echo_version(version)
       v = echo.split('.')  # E.g., 2.6.8 .
-      self.assertTrue(len(v) > 2, 'Not a valid version string: %s' % v)
-      self.assertEquals(version, '%s.%s' % (v[0], v[1]))
+      self.assertTrue(len(v) > 2, f'Not a valid version string: {v}')
+      self.assertEquals(version, f'{v[0]}.{v[1]}')
     else:
-      print('No python %s found. Skipping.' % version)
-      pytest.skip('No python %s on system' % version)
+      print(f'No python {version} found. Skipping.')
+      pytest.skip(f'No python {version} on system')
 
   def _echo_version(self, version):
     with temporary_dir() as distdir:
@@ -45,13 +45,13 @@ class InterpreterSelectionIntegrationTest(PantsRunIntegrationTest):
           'pants_distdir': distdir
         }
       }
-      binary_name = 'echo_interpreter_version_%s' % version
-      binary_target = 'tests/python/pants_test/python:' + binary_name
+      binary_name = f'echo_interpreter_version_{version}'
+      binary_target = f'tests/python/pants_test/python:{binary_name}'
       pants_run = self._build_pex(binary_target, config)
       self.assert_success(pants_run, 'Failed to build {binary}.'.format(binary=binary_target))
 
       # Run the built pex.
-      exe = os.path.join(distdir, binary_name + '.pex')
+      exe = os.path.join(distdir, f'{binary_name}.pex')
       proc = subprocess.Popen([exe], stdout=subprocess.PIPE)
       (stdout_data, _) = proc.communicate()
       return stdout_data

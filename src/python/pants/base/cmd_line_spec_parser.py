@@ -71,8 +71,7 @@ class CmdLineSpecParser(object):
       else:
         for address in self._parse_spec(spec, fail_fast):
           addresses.add(address)
-    for result in addresses - addresses_to_remove:
-      yield result
+    yield from addresses - addresses_to_remove
 
   def _parse_spec(self, spec, fail_fast=False):
     def normalize_spec_path(path):
@@ -134,6 +133,6 @@ class CmdLineSpecParser(object):
       spec_path, target_name = parse_spec(':'.join(spec_parts))
       try:
         build_file = BuildFile.from_cache(self._root_dir, spec_path)
-        return set([BuildFileAddress(build_file, target_name)])
+        return {BuildFileAddress(build_file, target_name)}
       except BuildFile.BuildFileError as e:
         raise self.BadSpecError(e)

@@ -66,7 +66,7 @@ class JvmdocGen(JvmTask):
 
     jvmdoc_tool_name = self.jvmdoc().tool_name
 
-    config_section = '%s-gen' % jvmdoc_tool_name
+    config_section = f'{jvmdoc_tool_name}-gen'
 
     options = self.get_options()
     self._include_codegen = options.include_codegen
@@ -98,7 +98,8 @@ class JvmdocGen(JvmTask):
     catalog = self.context.products.isrequired(self.jvmdoc().product_type)
     if catalog and self.combined:
       raise TaskError(
-          'Cannot provide %s target mappings for combined output' % self.jvmdoc().product_type)
+          f'Cannot provide {self.jvmdoc().product_type} target mappings for combined output'
+      )
 
     def docable(tgt):
       return language_predicate(tgt) and (self._include_codegen or not tgt.is_codegen)
@@ -137,9 +138,9 @@ class JvmdocGen(JvmTask):
     gendir = os.path.join(self.workdir, 'combined')
     if targets:
       safe_mkdir(gendir, clean=True)
-      command = create_jvmdoc_command(classpath, gendir, *targets)
-      if command:
-        self.context.log.debug("Running create_jvmdoc in %s with %s" % (gendir, " ".join(command)))
+      if command := create_jvmdoc_command(classpath, gendir, *targets):
+        self.context.log.debug(
+            f'Running create_jvmdoc in {gendir} with {" ".join(command)}')
         result, gendir = create_jvmdoc(command, gendir)
         self._handle_create_jvmdoc_result(targets, result, command)
     if self.open:
@@ -149,13 +150,12 @@ class JvmdocGen(JvmTask):
     jobs = {}
     for target in targets:
       gendir = self._gendir(target)
-      command = create_jvmdoc_command(classpath, gendir, target)
-      if command:
+      if command := create_jvmdoc_command(classpath, gendir, target):
         jobs[gendir] = (target, command)
 
     if jobs:
       with contextlib.closing(
-            multiprocessing.Pool(processes=min(len(jobs), multiprocessing.cpu_count()))) as pool:
+                multiprocessing.Pool(processes=min(len(jobs), multiprocessing.cpu_count()))) as pool:
         # map would be a preferable api here but fails after the 1st batch with an internal:
         # ...
         #  File "...src/python/pants/backend/core/tasks/jar_create.py", line 170, in javadocjar
@@ -169,8 +169,8 @@ class JvmdocGen(JvmTask):
         self.context.log.debug("Begin multiprocessing section; output may be misordered or garbled")
         try:
           for gendir, (target, command) in jobs.items():
-            self.context.log.debug("Running create_jvmdoc in %s with %s" %
-                                   (gendir, " ".join(command)))
+            self.context.log.debug(
+                f'Running create_jvmdoc in {gendir} with {" ".join(command)}')
             futures.append(pool.apply_async(create_jvmdoc, args=(command, gendir)))
 
           for future in futures:

@@ -99,9 +99,7 @@ class SourceRootTree(object):
         break
       found = curr_node
       found_path.append(subdir)
-    if found.is_leaf:
-      return found, found_path
-    return None, None
+    return (found, found_path) if found.is_leaf else (None, None)
 
   def get_root_and_types(self, path):
     """Finds the source root that matches the prefix of the given path.
@@ -130,17 +128,17 @@ class SourceRootTree(object):
     # The dir_list will always contain at least one entry.  Remove the last item to get the
     # parent of the source_root
     dir_list = dir_list[:-1]
-    siblings = []
     # Walk to the parent node in the tree
     parent_node = self._root
     for curr_dir in dir_list:
       parent_node = parent_node.get(curr_dir)
 
     parent_path = os.path.sep.join(dir_list)
-    for child_key in parent_node.children.keys():
-      if parent_node.get(child_key).is_leaf:
-        siblings.append(os.path.join(parent_path, child_key))
-    return siblings
+    return [
+        os.path.join(parent_path, child_key)
+        for child_key in parent_node.children.keys()
+        if parent_node.get(child_key).is_leaf
+    ]
 
   def _dump(self):
     """:returns: a text version of the tree for debugging"""
@@ -298,7 +296,8 @@ class SourceRoot(object):
     else:
       abspath = os.path.normpath(os.path.join(buildroot, source_root_dir))
     if not abspath.startswith(buildroot):
-      raise ValueError('Source root %s is not under the build root %s' % (abspath, buildroot))
+      raise ValueError(
+          f'Source root {abspath} is not under the build root {buildroot}')
     source_root_dir = os.path.relpath(abspath, buildroot)
 
     types = cls._TYPES_BY_ROOT.get(source_root_dir)

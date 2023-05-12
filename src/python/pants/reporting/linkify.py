@@ -14,9 +14,9 @@ from pants.base.build_file import BuildFile
 _PREFIX = r'(https?://)?/?' # http://, https:// or / or nothing.
 _OPTIONAL_PORT = r'(:\d+)?'
 _REL_PATH_COMPONENT = r'(\w|[-.])+'  # One or more alphanumeric, underscore, dash or dot.
-_ABS_PATH_COMPONENT = r'/' + _REL_PATH_COMPONENT
-_ABS_PATH_COMPONENTS = r'(%s)+' % _ABS_PATH_COMPONENT
-_OPTIONAL_TARGET_SUFFIX = r'(:%s)?' % _REL_PATH_COMPONENT  # For /foo/bar:target.
+_ABS_PATH_COMPONENT = f'/{_REL_PATH_COMPONENT}'
+_ABS_PATH_COMPONENTS = f'({_ABS_PATH_COMPONENT})+'
+_OPTIONAL_TARGET_SUFFIX = f'(:{_REL_PATH_COMPONENT})?'
 
 # Note that we require at least two path components.
 # We require the last characgter to be alphanumeric or underscore, because some tools print an
@@ -38,19 +38,17 @@ def linkify(buildroot, s):
     else:
       # See if it's a reference to a target in a BUILD file.
       parts = path.split(':')
-      if len(parts) == 2:
-        putative_dir = parts[0]
-      else:
-        putative_dir = path
+      putative_dir = parts[0] if len(parts) == 2 else path
       if os.path.isdir(os.path.join(buildroot, putative_dir)):
         build_file = BuildFile(buildroot, putative_dir, must_exist=False)
         path = build_file.relpath
     if os.path.exists(os.path.join(buildroot, path)):
       # The reporting server serves file content at /browse/<path_from_buildroot>.
-      return '/browse/%s' % path
+      return f'/browse/{path}'
     else:
       return None
 
   def maybe_add_link(url, text):
-    return '<a target="_blank" href="%s">%s</a>' % (url, text) if url else text
+    return f'<a target="_blank" href="{url}">{text}</a>' if url else text
+
   return _PATH_RE.sub(lambda m: maybe_add_link(to_url(m), m.group(0)), s)

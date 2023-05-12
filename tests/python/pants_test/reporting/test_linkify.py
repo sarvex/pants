@@ -30,8 +30,8 @@ class RunInfoTest(unittest.TestCase):
       shutil.rmtree(self._buildroot, ignore_errors=True)
 
   def _do_test_linkify(self, expected_link, url):
-    s = 'foo %s bar' % url
-    expected = 'foo <a target="_blank" href="%s">%s</a> bar' % (expected_link, url)
+    s = f'foo {url} bar'
+    expected = f'foo <a target="_blank" href="{expected_link}">{url}</a> bar'
     linkified = linkify(self._buildroot, s)
     self.assertEqual(expected, linkified)
 
@@ -39,13 +39,13 @@ class RunInfoTest(unittest.TestCase):
     relpath = 'underscore_and.dot/and-dash/baz'
     path = os.path.join(self._buildroot, relpath)
     ensure_file_exists(path)
-    self._do_test_linkify('/browse/%s' % relpath, path)
+    self._do_test_linkify(f'/browse/{relpath}', path)
 
   def test_linkify_relative_paths(self):
     relpath = 'underscore_and.dot/and-dash/baz'
     path = os.path.join(self._buildroot, relpath)
     ensure_file_exists(path)
-    self._do_test_linkify('/browse/%s' % relpath, relpath)
+    self._do_test_linkify(f'/browse/{relpath}', relpath)
 
   def test_linkify_http(self):
     url = 'http://foobar.com/baz/qux'

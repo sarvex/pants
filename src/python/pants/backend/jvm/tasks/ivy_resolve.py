@@ -129,9 +129,8 @@ class IvyResolve(NailgunTask, IvyTaskMixin, JvmToolTaskMixin):
       if self._report:
         self._generate_ivy_report(group_targets)
 
-    # TODO(ity): populate a Classpath object instead of mutating exclusives_groups
-    create_jardeps_for = self.context.products.isrequired('jar_dependencies')
-    if create_jardeps_for:
+    if create_jardeps_for := self.context.products.isrequired(
+        'jar_dependencies'):
       genmap = self.context.products.get('jar_dependencies')
       for target in filter(create_jardeps_for, targets):
         # TODO: Add mapjars to IvyTaskMixin? Or get rid of the mixin? It's weird that we use
@@ -149,8 +148,7 @@ class IvyResolve(NailgunTask, IvyTaskMixin, JvmToolTaskMixin):
     """Populate the build products with an IvyInfo object for each generated ivy report."""
     ivy_products = self.context.products.get_data('ivy_jar_products') or defaultdict(list)
     for conf in self._confs:
-      ivyinfo = IvyUtils.parse_xml_report(targets, conf)
-      if ivyinfo:
+      if ivyinfo := IvyUtils.parse_xml_report(targets, conf):
         # Value is a list, to accommodate multiple exclusives groups.
         ivy_products[conf].append(ivyinfo)
     self.context.products.safe_create_data('ivy_jar_products', lambda: ivy_products)

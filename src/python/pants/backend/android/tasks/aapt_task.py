@@ -52,6 +52,6 @@ class AaptTask(AndroidTask):
     """
     if self._forced_target_sdk:
       target_sdk = self._forced_target_sdk
-    android_jar = os.path.join('platforms', 'android-' + target_sdk, 'android.jar')
+    android_jar = os.path.join('platforms', f'android-{target_sdk}', 'android.jar')
     return self._android_dist.register_android_tool(android_jar)
 

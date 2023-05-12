@@ -20,13 +20,12 @@ class AppendingCacheKeyGenerator(CacheKeyGenerator):
   def combine_cache_keys(cache_keys):
     if len(cache_keys) == 1:
       return cache_keys[0]
-    else:
-      sorted_cache_keys = sorted(cache_keys)  # For commutativity.
-      combined_id = ','.join([cache_key.id for cache_key in sorted_cache_keys])
-      combined_hash = ','.join([cache_key.hash for cache_key in sorted_cache_keys])
-      combined_num_sources = reduce(lambda x, y: x + y,
-                                    [cache_key.num_sources for cache_key in sorted_cache_keys], 0)
-      return CacheKey(combined_id, combined_hash, combined_num_sources)
+    sorted_cache_keys = sorted(cache_keys)  # For commutativity.
+    combined_id = ','.join([cache_key.id for cache_key in sorted_cache_keys])
+    combined_hash = ','.join([cache_key.hash for cache_key in sorted_cache_keys])
+    combined_num_sources = reduce(lambda x, y: x + y,
+                                  [cache_key.num_sources for cache_key in sorted_cache_keys], 0)
+    return CacheKey(combined_id, combined_hash, combined_num_sources)
 
   def key_for_target(self, target, sources=None, transitive=False, fingerprint_strategy=None):
     return CacheKey(target.id, target.id, target.num_chunking_units)
@@ -36,7 +35,12 @@ class AppendingCacheKeyGenerator(CacheKeyGenerator):
 
 
 def print_vt(vt):
-  print('%d (%s) %s: [ %s ]' % (len(vt.targets), vt.cache_key, vt.valid, ', '.join(['%s(%s)' % (v.id, v.cache_key) for v in vt.versioned_targets])))
+  print('%d (%s) %s: [ %s ]' % (
+      len(vt.targets),
+      vt.cache_key,
+      vt.valid,
+      ', '.join([f'{v.id}({v.cache_key})' for v in vt.versioned_targets]),
+  ))
 
 
 class InvalidationCacheManagerTest(BaseTest):
@@ -70,8 +74,8 @@ class InvalidationCacheManagerTest(BaseTest):
     def print_partitions(partitions):
       strs = []
       for partition in partitions:
-        strs.append('(%s)' % ', '.join([t.id for t in partition.targets]))
-      print('[%s]' % ' '.join(strs))
+        strs.append(f"({', '.join([t.id for t in partition.targets])})")
+      print(f"[{' '.join(strs)}]")
 
     # Verify basic data structure soundness.
     all_vts = self.cache_manager._sort_and_validate_targets(targets)

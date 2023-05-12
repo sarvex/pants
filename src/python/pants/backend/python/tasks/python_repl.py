@@ -24,8 +24,8 @@ class PythonRepl(PythonTask):
 
   def execute(self):
     (accept_predicate, reject_predicate) = Target.lang_discriminator('python')
-    targets = self.require_homogeneous_targets(accept_predicate, reject_predicate)
-    if targets:
+    if targets := self.require_homogeneous_targets(accept_predicate,
+                                                   reject_predicate):
       # We can't throw if the target isn't a python target, because perhaps we were called on a
       # JVM target, in which case we have to no-op and let scala repl do its thing.
       # TODO(benjy): Some more elegant way to coordinate how tasks claim targets.
@@ -37,8 +37,8 @@ class PythonRepl(PythonTask):
                                               default='IPython:start_ipython')
         ipython_requirements = self.context.config.getlist('python-ipython', 'requirements',
                                                            default=['ipython==1.0.0'])
-        for req in ipython_requirements:
-          extra_requirements.append(PythonRequirement(req))
+        extra_requirements.extend(
+            PythonRequirement(req) for req in ipython_requirements)
       else:
         entry_point = 'code:interact'
 

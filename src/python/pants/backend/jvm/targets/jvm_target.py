@@ -94,10 +94,8 @@ class JvmTarget(Target, Jarable):
 
   @property
   def traversable_dependency_specs(self):
-    for spec in super(JvmTarget, self).traversable_specs:
-      yield spec
-    for resource_spec in self._resource_specs:
-      yield resource_spec
+    yield from super(JvmTarget, self).traversable_specs
+    yield from self._resource_specs
 
   @property
   def provides(self):

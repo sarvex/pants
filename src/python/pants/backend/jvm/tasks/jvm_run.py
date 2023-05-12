@@ -68,11 +68,7 @@ class JvmRun(JvmTask):
         working_dir = target.address.spec_path
     logger.debug ("Working dir is {0}".format(working_dir))
 
-    if isinstance(target, JvmApp):
-      binary = target.binary
-    else:
-      binary = target
-
+    binary = target.binary if isinstance(target, JvmApp) else target
     # We can't throw if binary isn't a JvmBinary, because perhaps we were called on a
     # python_binary, in which case we have to no-op and let python_run do its thing.
     # TODO(benjy): Some more elegant way to coordinate how tasks claim targets.

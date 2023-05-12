@@ -92,19 +92,22 @@ class IdeaGen(IdeGen):
     self.java_maximum_heap_size = self.get_options().java_maximum_heap_size_mb
 
     idea_version = _VERSIONS[self.get_options().version]
-    self.project_template = os.path.join(_TEMPLATE_BASEDIR, 'project-%s.mustache' % idea_version)
-    self.module_template = os.path.join(_TEMPLATE_BASEDIR, 'module-%s.mustache' % idea_version)
+    self.project_template = os.path.join(_TEMPLATE_BASEDIR,
+                                         f'project-{idea_version}.mustache')
+    self.module_template = os.path.join(_TEMPLATE_BASEDIR,
+                                        f'module-{idea_version}.mustache')
 
-    self.project_filename = os.path.join(self.cwd, '%s.ipr' % self.project_name)
-    self.module_filename = os.path.join(self.gen_project_workdir, '%s.iml' % self.project_name)
+    self.project_filename = os.path.join(self.cwd, f'{self.project_name}.ipr')
+    self.module_filename = os.path.join(self.gen_project_workdir,
+                                        f'{self.project_name}.iml')
 
   @staticmethod
   def _maven_targets_excludes(repo_root):
-    excludes = []
-    for (dirpath, dirnames, filenames) in safe_walk(repo_root):
-      if "pom.xml" in filenames:
-        excludes.append(os.path.join(os.path.relpath(dirpath, start=repo_root), "target"))
-    return excludes
+    return [
+        os.path.join(os.path.relpath(dirpath, start=repo_root), "target")
+        for dirpath, dirnames, filenames in safe_walk(repo_root)
+        if "pom.xml" in filenames
+    ]
 
   @staticmethod
   def _sibling_is_test(source_set):
@@ -294,6 +297,8 @@ class IdeaGen(IdeGen):
     # As a convenience, we use _parse_xml_component_elements to get the
     # superceding component names, ignoring the generated xml fragments.
     # This is fine, since performance is not an issue.
-    generated_component_names = set(
-      [ name for (name, _) in self._parse_xml_component_elements(path) ])
+    generated_component_names = {
+        name
+        for (name, _) in self._parse_xml_component_elements(path)
+    }
     return [ x[1] for x in mergable_components if x[0] not in generated_component_names]

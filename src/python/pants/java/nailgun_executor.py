@@ -42,7 +42,7 @@ class NailgunExecutor(Executor):
       """Parses an endpoint from a string of the form exe:fingerprint:pid:port"""
       components = endpoint.split(':')
       if len(components) != 4:
-        raise ValueError('Invalid endpoint spec %s' % endpoint)
+        raise ValueError(f'Invalid endpoint spec {endpoint}')
       exe, fingerprint, pid, port = components
       return cls(exe, fingerprint, int(pid), int(port))
 
@@ -145,8 +145,8 @@ class NailgunExecutor(Executor):
         if owner_arg in proc.cmdline:
           fingerprint = cls.parse_fingerprint_arg(proc.cmdline)
           port = cls._find_ng_listen_port(proc)
-          exe = proc.cmdline[0]
           if fingerprint and port:
+            exe = proc.cmdline[0]
             return cls.Endpoint(exe, fingerprint, proc.pid, port)
       except (psutil.AccessDenied, psutil.NoSuchProcess):
         pass
@@ -193,8 +193,7 @@ class NailgunExecutor(Executor):
   def kill(self):
     """Kills the nailgun server owned by this executor if its currently running."""
 
-    endpoint = self._get_nailgun_endpoint()
-    if endpoint:
+    if endpoint := self._get_nailgun_endpoint():
       self._log_kill(endpoint.pid, endpoint.port)
       try:
         os.kill(endpoint.pid, 9)
@@ -217,22 +216,21 @@ class NailgunExecutor(Executor):
     updated = updated or (endpoint and endpoint.exe != self._distribution.java)
     if running and not updated:
       return self._create_ngclient(endpoint.port, stdout, stderr)
-    else:
-      if running and updated:
-        log.debug(
-          'Killing ng server launched with {endpoint}'.format(endpoint=repr(endpoint)))
-        self.kill()
-      return self._spawn_nailgun_server(new_fingerprint, jvm_args, classpath, stdout, stderr)
+    if running:
+      log.debug(
+        'Killing ng server launched with {endpoint}'.format(endpoint=repr(endpoint)))
+      self.kill()
+    return self._spawn_nailgun_server(new_fingerprint, jvm_args, classpath, stdout, stderr)
 
   # 'NGServer started on 127.0.0.1, port 53785.'
   _PARSE_NG_PORT = re.compile('.*\s+port\s+(\d+)\.$')
 
   def _parse_nailgun_port(self, line):
-    match = self._PARSE_NG_PORT.match(line)
-    if not match:
+    if match := self._PARSE_NG_PORT.match(line):
+      return int(match.group(1))
+    else:
       raise NailgunClient.NailgunError('Failed to determine spawned ng port from response'
                                        ' line: {line}'.format(line=line))
-    return int(match.group(1))
 
   def _await_nailgun_server(self, stdout, stderr, debug_desc):
     # TODO(Eric Ayers) Make these cmdline/config parameters once we have a global way to fetch
@@ -260,11 +258,9 @@ class NailgunExecutor(Executor):
 
     attempt = 0
     while nailgun:
-      sock = nailgun.try_connect()
-      if sock:
+      if sock := nailgun.try_connect():
         sock.close()
-        endpoint = self._get_nailgun_endpoint()
-        if endpoint:
+        if endpoint := self._get_nailgun_endpoint():
           log.debug('Connected to ng server launched with {endpoint}'
                     .format(endpoint=repr(endpoint)))
         else:

@@ -39,7 +39,7 @@ class Fetcher(object):
     def __init__(self, value=None, response_code=None):
       super(Fetcher.PermanentError, self).__init__(value)
       if response_code and not isinstance(response_code, Compatibility.integer):
-        raise ValueError('response_code must be an integer, got %s' % response_code)
+        raise ValueError(f'response_code must be an integer, got {response_code}')
       self._response_code = response_code
 
     @property
@@ -104,7 +104,7 @@ class Fetcher(object):
       :param fh: a file handle open for writing
       """
       if not fh or not hasattr(fh, 'write'):
-        raise ValueError('fh must be an open file handle, given %s' % fh)
+        raise ValueError(f'fh must be an open file handle, given {fh}')
       self._fh = fh
 
     def recv_chunk(self, data):
@@ -153,7 +153,7 @@ class Fetcher(object):
       """
       self._width = width or 50
       if not isinstance(self._width, Compatibility.integer):
-        raise ValueError('The width must be an integer, given %s' % self._width)
+        raise ValueError(f'The width must be an integer, given {self._width}')
       self._chunk_size_bytes = chunk_size_bytes or 10 * 1024
       self._start = time.time()
 
@@ -180,9 +180,10 @@ class Fetcher(object):
         sys.stdout.write('.' * self.chunks)
         if self.size:
           size_width = len(str(self.download_size))
-          downloaded = int(self.read / 1024)
-          sys.stdout.write('%s %s KB' % (' ' * (self._width - self.chunks),
-                                         str(downloaded).rjust(size_width)))
+          downloaded = self.read // 1024
+          sys.stdout.write(
+              f"{' ' * (self._width - self.chunks)} {str(downloaded).rjust(size_width)} KB"
+          )
         sys.stdout.flush()
 
     def finished(self):
@@ -211,7 +212,7 @@ class Fetcher(object):
     timeout_secs = timeout_secs or 1.0
 
     if not isinstance(listener, self.Listener):
-      raise ValueError('listener must be a Listener instance, given %s' % listener)
+      raise ValueError(f'listener must be a Listener instance, given {listener}')
 
     try:
       with closing(self._requests.get(url, stream=True, timeout=timeout_secs)) as resp:
@@ -234,7 +235,7 @@ class Fetcher(object):
     except requests.RequestException as e:
       exception_factory = (self.TransientError if isinstance(e, self._TRANSIENT_EXCEPTION_TYPES)
                            else self.PermanentError)
-      raise exception_factory('Problem GETing data from %s: %s' % (url, e))
+      raise exception_factory(f'Problem GETing data from {url}: {e}')
 
   def download(self, url, listener=None, path_or_fd=None, chunk_size_bytes=None, timeout_secs=None):
     """Downloads data from the given URL.

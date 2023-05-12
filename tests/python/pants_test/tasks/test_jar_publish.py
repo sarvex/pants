@@ -32,9 +32,11 @@ class JarPublishTest(TaskTest):
 
   def test_smoke_publish(self):
     with temporary_dir() as publish_dir:
-      task = self.prepare_task(args=['--test-local=%s' % publish_dir],
-                               build_graph=self.build_graph,
-                               build_file_parser=self.build_file_parser)
+      task = self.prepare_task(
+          args=[f'--test-local={publish_dir}'],
+          build_graph=self.build_graph,
+          build_file_parser=self.build_file_parser,
+      )
       task.scm = Mock()
       task.execute()
 
@@ -57,10 +59,17 @@ class JarPublishTest(TaskTest):
     )
 
   def _prepare_for_publishing(self, with_alias=False):
-    targets = {}
-    targets['a'] = self.create_library('a', 'java_library', 'a', ['A.java'],
-                                       provides="""artifact(org='com.example', name='nail', repo=internal)""")
-
+    targets = {
+        'a':
+        self.create_library(
+            'a',
+            'java_library',
+            'a',
+            ['A.java'],
+            provides=
+            """artifact(org='com.example', name='nail', repo=internal)""",
+        )
+    }
     targets['b'] = self.create_library('b', 'java_library', 'b', ['B.java'],
                                    provides="""artifact(org='com.example', name='shoe', repo=internal)""",
                                    dependencies=['a'])
@@ -130,10 +139,12 @@ repos: {
     targets = self._prepare_for_publishing()
 
     with temporary_dir() as publish_dir:
-      task = self.prepare_task(args=['--test-local=%s' % publish_dir],
-                               build_graph=self.build_graph,
-                               build_file_parser=self.build_file_parser,
-                               targets=targets)
+      task = self.prepare_task(
+          args=[f'--test-local={publish_dir}'],
+          build_graph=self.build_graph,
+          build_file_parser=self.build_file_parser,
+          targets=targets,
+      )
       self._prepare_mocks(task)
       task.execute()
 
@@ -155,11 +166,12 @@ repos: {
       targets = self._prepare_for_publishing(with_alias=with_alias)
 
       with temporary_dir() as publish_dir:
-        task = self.prepare_task(args=['--test-local=%s' % publish_dir,
-                                      '--no-test-dryrun'],
-                                build_graph=self.build_graph,
-                                build_file_parser=self.build_file_parser,
-                                targets=targets)
+        task = self.prepare_task(
+            args=[f'--test-local={publish_dir}', '--no-test-dryrun'],
+            build_graph=self.build_graph,
+            build_file_parser=self.build_file_parser,
+            targets=targets,
+        )
         self._prepare_mocks(task)
         task.execute()
 

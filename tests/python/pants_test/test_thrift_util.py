@@ -35,8 +35,10 @@ class ThriftUtilTest(unittest.TestCase):
       b_included = self.write(os.path.join(b, 'b_included.thrift'), '# noop')
       c_included = self.write(os.path.join(b, 'c_included.thrift'), '# noop')
 
-      self.assertEquals(set([a_included, b_included, c_included]),
-                        find_includes(basedirs=set([a, b]), source=main))
+      self.assertEquals(
+          {a_included, b_included, c_included},
+          find_includes(basedirs={a, b}, source=main),
+      )
 
   def test_find_includes_exception(self):
     with temporary_dir() as dir:
@@ -47,18 +49,21 @@ class ThriftUtilTest(unittest.TestCase):
         include "b_included.thrift"
       ''')
       self.write(os.path.join(a, 'sub', 'a_included.thrift'), '# noop')
-      self.assertRaises(ValueError, find_includes, basedirs=set([a]), source=main)
+      self.assertRaises(ValueError, find_includes, basedirs={a}, source=main)
 
   def test_find_root_thrifts(self):
     with temporary_dir() as dir:
       root_1 = self.write(os.path.join(dir, 'root_1.thrift'), '# noop')
       root_2 = self.write(os.path.join(dir, 'root_2.thrift'), '# noop')
-      self.assertEquals(set([root_1, root_2]),
-                        find_root_thrifts(basedirs=[], sources=[root_1, root_2]))
+      self.assertEquals(
+          {root_1, root_2},
+          find_root_thrifts(basedirs=[], sources=[root_1, root_2]),
+      )
 
     with temporary_dir() as dir:
       root_1 = self.write(os.path.join(dir, 'root_1.thrift'), 'include "mid_1.thrift"')
       self.write(os.path.join(dir, 'mid_1.thrift'), 'include "leaf_1.thrift"')
       self.write(os.path.join(dir, 'leaf_1.thrift'), '# noop')
       root_2 = self.write(os.path.join(dir, 'root_2.thrift'), 'include "root_1.thrift"')
-      self.assertEquals(set([root_2]), find_root_thrifts(basedirs=[], sources=[root_1, root_2]))
+      self.assertEquals({root_2},
+                        find_root_thrifts(basedirs=[], sources=[root_1, root_2]))

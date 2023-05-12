@@ -10,7 +10,7 @@ import sys
 # Useful for testing which interpreter the pex machinery selects.
 
 v = sys.version_info
-print('%d.%d.%d' % v[0:3])
+print('%d.%d.%d' % v[:3])
 
 def say_hello():
   # NOTE: Do not change this text without changing tests that check for it.

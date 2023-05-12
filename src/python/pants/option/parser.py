@@ -111,7 +111,7 @@ class Parser(object):
       help_args = []
       for flag in args:
         if flag.startswith('--') and not flag.startswith('--no-'):
-          inverse_args.append('--no-' + flag[2:])
+          inverse_args.append(f'--no-{flag[2:]}')
           help_args.append('--[no-]{0}'.format(flag[2:]))
         else:
           help_args.append(flag)
@@ -203,8 +203,7 @@ class Parser(object):
     Replicated from the dest inference logic in argparse:
     '--foo-bar' -> 'foo_bar' and '-x' -> 'x'.
     """
-    dest = kwargs.get('dest')
-    if dest:
+    if dest := kwargs.get('dest'):
       return dest
     arg = next((a for a in args if a.startswith('--')), args[0])
     return arg.lstrip('-').replace('-', '_')
@@ -248,4 +247,4 @@ class Parser(object):
     self._frozen = True
 
   def __str__(self):
-    return 'Parser(%s)' % self._scope
+    return f'Parser({self._scope})'

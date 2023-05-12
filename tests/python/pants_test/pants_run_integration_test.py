@@ -33,7 +33,7 @@ class PantsRunIntegrationTest(unittest.TestCase):
     :param version: A python version string, such as 2.6, 3.
     """
     try:
-      subprocess.call(['python%s' % version, '-V'])
+      subprocess.call([f'python{version}', '-V'])
       return True
     except OSError:
       return False
@@ -52,7 +52,7 @@ class PantsRunIntegrationTest(unittest.TestCase):
 
     # We add workdir to the DEFAULT section, and also ensure that it's emitted first.
     default_section = config.pop('DEFAULT', {})
-    default_section['pants_workdir'] = '%s' % workdir
+    default_section['pants_workdir'] = f'{workdir}'
 
     ini = ''
     for section, section_config in [('DEFAULT', default_section)] + config.items():
@@ -65,7 +65,7 @@ class PantsRunIntegrationTest(unittest.TestCase):
       fp.write(ini)
     env = os.environ.copy()
     env['PANTS_CONFIG_OVERRIDE'] = ini_file_name
-    env.update(extra_env or {})
+    env |= (extra_env or {})
 
     pants_command = ([os.path.join(get_buildroot(), self.PANTS_SCRIPT_NAME)] + command +
                      ['--no-lock', '--kill-nailguns'])
@@ -113,9 +113,7 @@ class PantsRunIntegrationTest(unittest.TestCase):
     # this test back to using an un-archived bundle.
     with temporary_dir() as workdir:
       ZIP.extract('dist/{bundle_name}.zip'.format(bundle_name=bundle_name), workdir)
-      optional_args = []
-      if args:
-        optional_args = args
+      optional_args = args if args else []
       java_run = subprocess.Popen(['java',
                                    '-jar',
                                    '{bundle_name}.jar'.format(bundle_name=bundle_name)]

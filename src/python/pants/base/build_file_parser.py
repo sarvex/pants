@@ -82,7 +82,7 @@ class BuildFileParser(object):
     family_address_map_by_build_file = self.parse_build_file_family(build_file)
     address_map = {}
     for build_file, sibling_address_map in family_address_map_by_build_file.items():
-      address_map.update(sibling_address_map)
+      address_map |= sibling_address_map
     return address_map
 
   def parse_build_file_family(self, build_file):
@@ -112,18 +112,15 @@ class BuildFileParser(object):
       with open(build_file.full_path, "r") as build_contents:
         context = "Error parsing {path}:\n".format(path=build_file.full_path)
         curr_lineno = 0
-        for line in build_contents.readlines():
+        for line in build_contents:
           curr_lineno += 1
-          if curr_lineno == lineno:
-            highlight = '*'
-          else:
-            highlight = ' '
+          highlight = '*' if curr_lineno == lineno else ' '
           if curr_lineno >= lineno - 3:
             context += "{highlight}{curr_lineno:4d}: {line}".format(
               highlight=highlight, line=line, curr_lineno=curr_lineno)
             if offset and lineno == curr_lineno:
               context += "       {caret:>{width}} {error_type}: {message}\n\n" \
-                .format(caret="^", width=int(offset), error_type=error_type,
+                  .format(caret="^", width=int(offset), error_type=error_type,
                         message=message)
           if curr_lineno > lineno + 3:
             break

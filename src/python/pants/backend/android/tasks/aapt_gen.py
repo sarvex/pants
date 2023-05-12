@@ -50,7 +50,10 @@ class AaptGen(AaptTask, CodeGen):
     super(AaptGen, self).prepare(round_manager)
 
     # prepare exactly N android jar targets where N is the number of SDKs in-play
-    sdks = set(ar.target_sdk for ar in self.context.targets(predicate=self.is_gentarget))
+    sdks = {
+        ar.target_sdk
+        for ar in self.context.targets(predicate=self.is_gentarget)
+    }
     for sdk in sdks:
       jar_url = 'file://{0}'.format(self.android_jar_tool(sdk))
       jar = JarDependency(org='com.google', name='android', rev=sdk, url=jar_url)
@@ -67,21 +70,24 @@ class AaptGen(AaptTask, CodeGen):
     return lang == 'java'
 
   def render_args(self, target, output_dir):
-    args = []
+    args = [self.aapt_tool(target.build_tools_version)]
 
-    # Glossary of used aapt flags. Aapt handles a ton of action, this will continue to expand.
-    #   : 'package' is the main aapt operation (see class docstring for more info).
-    #   : '-m' is to "make" a package directory under location '-J'.
-    #   : '-J' Points to the output directory.
-    #   : '-M' is the AndroidManifest.xml of the project.
-    #   : '-S' points to the resource_dir to "spider" down while collecting resources.
-    #   : '-I' packages to add to base "include" set, here it is the android.jar of the target-sdk.
-    args.extend([self.aapt_tool(target.build_tools_version)])
-    args.extend(['package', '-m', '-J', output_dir])
-    args.extend(['-M', target.manifest])
-    args.extend(['-S', target.resource_dir])
-    args.extend(['-I', self.android_jar_tool(target.target_sdk)])
-    args.extend(['--ignore-assets', self.ignored_assets])
+    args.extend([
+        'package',
+        '-m',
+        '-J',
+        output_dir,
+        '-M',
+        target.manifest,
+        '-S',
+        target.resource_dir,
+    ])
+    args.extend([
+        '-I',
+        self.android_jar_tool(target.target_sdk),
+        '--ignore-assets',
+        self.ignored_assets,
+    ])
     log.debug('Executing: {0}'.format(args))
     return args
 

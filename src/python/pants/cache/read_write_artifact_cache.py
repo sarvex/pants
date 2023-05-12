@@ -20,9 +20,10 @@ class ReadWriteArtifactCache(ArtifactCache):
     def get_root_and_log(cache):
       if cache is not None:
         artifact_roots.append(cache.artifact_root)
+
     get_root_and_log(read_artifact_cache)
     get_root_and_log(write_artifact_cache)
-    if len(artifact_roots) == 0:
+    if not artifact_roots:
       # Parent will never be accessed, so this is OK. In fact, it's a good way to ensure it.
       artifact_root = None
     else:

@@ -74,8 +74,7 @@ class BootstrapJvmTools(Task, IvyTaskMixin):
                                                      section=tool_product_config_map[key]['ini_section'],
                                                      key=tool_product_config_map[key]['ini_key']))
         raise
-      for target in targets:
-        yield target
+      yield from targets
 
   def cached_bootstrap_classpath_callback(self, key, tools):
     cache = {}
@@ -85,11 +84,12 @@ class BootstrapJvmTools(Task, IvyTaskMixin):
       with cache_lock:
         if 'classpath' not in cache:
           targets = list(self._resolve_tool_targets(tools, key))
-          workunit_name = 'bootstrap-%s' % str(key)
+          workunit_name = f'bootstrap-{str(key)}'
           cache['classpath'] = self.ivy_resolve(targets,
                                                 executor=executor,
                                                 silent=True,
                                                 workunit_name=workunit_name,
                                                 workunit_labels=[WorkUnit.BOOTSTRAP])
         return cache['classpath']
+
     return bootstrap_classpath
